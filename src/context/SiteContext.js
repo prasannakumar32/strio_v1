@@ -28,11 +28,37 @@ export const SiteProvider = ({ children }) => {
       c4: 250
     }
   ]);
+
+  const [consumptionSites, setConsumptionSites] = useState([
+    {
+      id: 'C1',
+      name: 'Polyspin Exports Ltd',
+      type: 'MANUFACTURING',
+      location: 'Rajapalayam',
+      status: 'Active'
+    },
+    {
+      id: 'C2',
+      name: 'PEL Textiles',
+      type: 'TEXTILES',
+      location: 'Rajapalayam',
+      status: 'Active'
+    },
+    {
+      id: 'C3',
+      name: 'M/s Ramar and Sons',
+      type: 'MANUFACTURING',
+      location: 'Rajapalayam',
+      status: 'Active'
+    }
+  ]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const value = {
     productionSites,
+    consumptionSites,
     loading,
     error,
   };

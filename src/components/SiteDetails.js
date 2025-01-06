@@ -1,48 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Box, CircularProgress, Alert, Typography, Grid, Paper } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  Box, 
+  CircularProgress, 
+  Alert, 
+  Typography, 
+  Grid, 
+  Paper,
+  Button,
+  Card,
+  CardContent,
+  IconButton
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import './SiteDetails.css';
 import Layout from './Layout';
-import { useSiteContext } from '../context/SiteContext';
-import api from '../services/api';
+import productionService from '../services/productionService';
+
+const PRODUCTION_SITES = {
+  PS1: { name: 'Pudukottai Solar Park', location: 'Pudukottai', type: 'Solar' },
+  PS2: { name: 'Tirunelveli Wind Farm', location: 'Tirunelveli', type: 'Wind' }
+};
 
 const SiteDetails = () => {
   const { siteId } = useParams();
-  const { consumptionSites } = useSiteContext();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedSite, setSelectedSite] = useState(null);
+  const [siteData, setSiteData] = useState(null);
 
   useEffect(() => {
-    const fetchSiteDetails = async () => {
+    const fetchSiteData = async () => {
       try {
         setLoading(true);
-        // First try to find the site in the context
-        const siteFromContext = consumptionSites.find(site => site.id === siteId);
+        setError(null);
+
+        const siteConfig = PRODUCTION_SITES[siteId];
+        if (!siteConfig) {
+          setError('Invalid site ID');
+          return;
+        }
+
+        const latestData = await productionService.getLatestProductionData();
+        const siteData = latestData.find(data => data.siteId === siteId);
         
-        if (siteFromContext) {
-          setSelectedSite(siteFromContext);
+        if (siteData) {
+          setSiteData({
+            ...siteConfig,
+            ...siteData,
+            lastUpdated: siteData.timestamp ? new Date(siteData.timestamp).toLocaleString() : 'N/A'
+          });
         } else {
-          // If not in context, fetch from API
-          const response = await api.getSiteById(siteId);
-          if (response.success && response.data) {
-            setSelectedSite(response.data);
-          } else {
-            setError('Failed to fetch site details');
-          }
+          setSiteData({
+            ...siteConfig,
+            c1: 0,
+            c2: 0,
+            c3: 0,
+            c4: 0,
+            c5: 0,
+            status: 'No Data',
+            lastUpdated: 'N/A'
+          });
         }
       } catch (err) {
-        console.error('Error fetching site details:', err);
-        setError('Error loading site details. Please try again.');
+        console.error('Error fetching site data:', err);
+        setError('Error loading site data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (siteId) {
-      fetchSiteDetails();
-    }
-  }, [siteId, consumptionSites]);
+    fetchSiteData();
+  }, [siteId]);
+
+  const handleBack = () => {
+    navigate('/allocation');
+  };
 
   if (loading) {
     return (
@@ -58,7 +91,11 @@ const SiteDetails = () => {
     return (
       <Layout>
         <Box m={2}>
-          <Alert severity="error">
+          <Alert severity="error" action={
+            <Button color="inherit" size="small" onClick={handleBack}>
+              Go Back
+            </Button>
+          }>
             {error}
           </Alert>
         </Box>
@@ -66,11 +103,15 @@ const SiteDetails = () => {
     );
   }
 
-  if (!selectedSite) {
+  if (!siteData) {
     return (
       <Layout>
         <Box m={2}>
-          <Alert severity="info">
+          <Alert severity="info" action={
+            <Button color="inherit" size="small" onClick={handleBack}>
+              Go Back
+            </Button>
+          }>
             No site data available
           </Alert>
         </Box>
@@ -78,62 +119,88 @@ const SiteDetails = () => {
     );
   }
 
+  const totalProduction = 
+    Number(siteData.c1 || 0) +
+    Number(siteData.c2 || 0) +
+    Number(siteData.c3 || 0) +
+    Number(siteData.c4 || 0) +
+    Number(siteData.c5 || 0);
+
   return (
     <Layout>
-      <Paper className="site-details" elevation={3} sx={{ p: 3, m: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          {selectedSite.name}
-        </Typography>
-        
-        <Grid container spacing={3} className="details-grid">
-          <Grid item xs={12} sm={6}>
-            <Box className="detail-item">
-              <Typography variant="subtitle1" color="textSecondary">
-                Location:
-              </Typography>
-              <Typography variant="body1">
-                {selectedSite.location}
-              </Typography>
-            </Box>
+      <Box sx={{ p: 3 }}>
+        {/* Header with back button */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <IconButton onClick={handleBack} sx={{ mr: 2 }}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4">
+            {siteData.name}
+          </Typography>
+        </Box>
+
+        {/* Site Information */}
+        <Grid container spacing={3}>
+          {/* Basic Info */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom>Site Information</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Typography color="textSecondary">Location</Typography>
+                  <Typography variant="h6">{siteData.location}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography color="textSecondary">Type</Typography>
+                  <Typography variant="h6">{siteData.type}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography color="textSecondary">Status</Typography>
+                  <Typography variant="h6">{siteData.status}</Typography>
+                </Grid>
+              </Grid>
+            </Paper>
           </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <Box className="detail-item">
-              <Typography variant="subtitle1" color="textSecondary">
-                Type:
-              </Typography>
-              <Typography variant="body1">
-                {selectedSite.type}
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Box className="detail-item">
-              <Typography variant="subtitle1" color="textSecondary">
-                Status:
-              </Typography>
-              <Typography 
-                variant="body1" 
-                className={`status ${selectedSite.status.toLowerCase()}`}
-              >
-                {selectedSite.status}
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Box className="detail-item">
-              <Typography variant="subtitle1" color="textSecondary">
-                Site ID:
-              </Typography>
-              <Typography variant="body1">
-                {siteId}
-              </Typography>
-            </Box>
+          {/* Production Data */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>Production Data</Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Card>
+                    <CardContent>
+                      <Typography color="textSecondary">Total Production</Typography>
+                      <Typography variant="h4">{totalProduction}</Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item xs={12}>
+                  <Grid container spacing={2}>
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <Grid item xs={12} sm={6} md={2.4} key={num}>
+                        <Card>
+                          <CardContent>
+                            <Typography color="textSecondary">C{num}</Typography>
+                            <Typography variant="h5">{siteData[`c${num}`] || 0}</Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Paper>
           </Grid>
         </Grid>
-      </Paper>
+
+        {/* Last Updated */}
+        <Box sx={{ mt: 2 }}>
+          <Typography color="textSecondary">
+            Last Updated: {siteData.lastUpdated}
+          </Typography>
+        </Box>
+      </Box>
     </Layout>
   );
 };

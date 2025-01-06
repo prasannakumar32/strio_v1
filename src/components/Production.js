@@ -2,153 +2,186 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Container,
   Typography,
+  Paper,
   Grid,
-  Card,
-  CardContent,
   Chip,
-  CircularProgress,
-  Alert
+  IconButton,
 } from '@mui/material';
-import { useSiteContext } from '../context/SiteContext';
-import api from '../services/api';
-import Layout from './Layout';
+import {
+  LocationOn as LocationIcon,
+  Business as BusinessIcon,
+  Speed as EfficiencyIcon,
+  PowerOutlined as PowerIcon,
+  Visibility as VisibilityIcon
+} from '@mui/icons-material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const Production = () => {
+function Production() {
   const navigate = useNavigate();
-  const { productionSites } = useSiteContext();
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [sites, setSites] = useState([]);
+  const [historicalData, setHistoricalData] = useState({});
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
-
-    if (!token || !user) {
-      navigate('/login');
-      return;
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    const fetchProductionSites = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await api.getSites('PRODUCTION');
-
-        if (response.success && response.data) {
-          const sortedSites = response.data.sort((a, b) => {
-            if (a.type === 'WIND' && b.type === 'SOLAR') return -1;
-            if (a.type === 'SOLAR' && b.type === 'WIND') return 1;
-            return 0;
-          });
-
-          setSites(sortedSites);
-          localStorage.setItem('productionSites', JSON.stringify(sortedSites));
-        } else {
-          const storedSites = JSON.parse(localStorage.getItem('productionSites') || '[]');
-          if (storedSites.length > 0) {
-            setSites(storedSites);
-          } else {
-            setError(response.error || 'Failed to fetch production sites');
-          }
-        }
-      } catch (err) {
-        console.error('Error loading production sites:', err);
-        const storedSites = JSON.parse(localStorage.getItem('productionSites') || '[]');
-        if (storedSites.length > 0) {
-          setSites(storedSites);
-        } else {
-          setError('Error loading production sites. Please try again.');
-        }
-      } finally {
-        setLoading(false);
+  const PRODUCTION_SITES = [
+    {
+      id: 'PS1',
+      name: 'Pudukottai Solar Farm',
+      location: 'Pudukottai',
+      capacity: '50 MW',
+      type: 'SOLAR',
+      status: 'Active',
+      coordinates: '8.7139, 77.7567',
+      historicalData: {
+        '2025-01': { total: 163000 },
+        '2024-12': { total: 160000 },
+        '2024-11': { total: 156000 }
       }
-    };
+    },
+    {
+      id: 'PW1',
+      name: 'Tirunelveli Wind Park',
+      location: 'Tirunelveli',
+      capacity: '50 MW',
+      type: 'WIND',
+      status: 'Active',
+      coordinates: '8.7139, 77.7567',
+      historicalData: {
+        '2025-01': { total: 96000 },
+        '2024-12': { total: 93000 },
+        '2024-11': { total: 92500 }
+      }
+    }
+  ];
 
-    fetchProductionSites();
-  }, []);
+  const getHistoricalChartData = (site) => {
+    if (!site.historicalData) return [];
+    
+    return Object.entries(site.historicalData)
+      .map(([month, data]) => ({
+        month: formatMonthDisplay(month),
+        total: data.total
+      }))
+      .sort((a, b) => new Date(a.month) - new Date(b.month));
+  };
 
-  if (loading) {
-    return (
-      <Layout>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <Box m={2}>
-          <Alert severity="error">{error}</Alert>
-        </Box>
-      </Layout>
-    );
-  }
-
-  const displaySites = sites.length > 0 ? sites : [];
+  const formatMonthDisplay = (monthStr) => {
+    const date = new Date(monthStr + '-01');
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  };
 
   const handleSiteClick = (siteId) => {
-    navigate(`/production/view/${siteId}`);
+    if (siteId === 'PS1' || siteId === 'PW1') {
+      navigate(`/production/${siteId}`);
+    } else {
+      navigate(`/production/view/${siteId}`);
+    }
   };
 
   return (
-    <Layout>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h4" component="h1">
-              Production Sites
-            </Typography>
-          </Grid>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <PowerIcon sx={{ mr: 2, fontSize: 28 }} />
+        <Typography variant="h5" component="h1">
+          Production Sites
+        </Typography>
+      </Box>
 
-          {displaySites.map((site) => (
-            <Grid item xs={12} sm={6} md={4} key={site.id}>
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-                onClick={() => handleSiteClick(site.id)}
-              >
-                <CardContent>
-                  <Typography variant="h6" component="h2" gutterBottom>
-                    {site.name}
-                  </Typography>
-                  <Typography color="textSecondary" gutterBottom>
-                    Location: {site.location}
-                  </Typography>
-                  <Typography color="textSecondary" gutterBottom>
-                    Type: {site.type}
-                  </Typography>
-                  <Typography variant="body2" gutterBottom>
-                    Capacity: {site.capacity?.toLocaleString()} MW
-                  </Typography>
-                  <Chip
-                    label={site.status === 'active' ? 'Active' : 'Inactive'}
-                    color={site.status === 'active' ? 'success' : 'error'}
-                    size="small"
-                    sx={{ mt: 1 }}
-                  />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-    </Layout>
+      <Grid container spacing={3}>
+        {PRODUCTION_SITES.map((site) => (
+          <Grid item xs={12} md={6} key={site.id}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                '&:hover': {
+                  bgcolor: '#f5f5f5',
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+                  {site.name}
+                </Typography>
+                <IconButton 
+                  color="primary"
+                  onClick={() => handleSiteClick(site.id)}
+                  sx={{ mt: -1 }}
+                >
+                  <VisibilityIcon />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                <LocationIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                <Typography variant="body2" color="text.secondary">
+                  {site.location}
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                <BusinessIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Type: {site.type}
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                <EfficiencyIcon sx={{ mr: 1, color: 'text.secondary', fontSize: 20 }} />
+                <Typography variant="body2" color="text.secondary">
+                  Capacity: {site.capacity}
+                </Typography>
+              </Box>
+
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Latest Production (January 2025)
+                </Typography>
+                <Typography variant="h4" color="primary">
+                  {site.historicalData['2025-01'].total.toLocaleString()} KWh
+                </Typography>
+              </Box>
+
+              <Box sx={{ height: 200, mt: 3, mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Historical Production (3 Months)
+                </Typography>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={getHistoricalChartData(site)}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="total" 
+                      stroke="#8884d8" 
+                      name="Total Production (KWh)"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
+
+              <Chip
+                label={site.status}
+                color={site.status === 'Active' ? 'success' : 'error'}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
-};
+}
 
 export default Production;

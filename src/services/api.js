@@ -98,217 +98,114 @@ const mockData = {
     // Solar Production Sites
     {
       id: 'PS1',
-      name: 'Pudukottai Solar Plant',
+      name: 'Pudukottai Solar Park',
+      location: 'Vadakadu, Keelathur, Pudukottai',
       type: 'SOLAR',
       siteType: 'PRODUCTION',
-      location: 'Pudukottai, Tamil Nadu',
-      capacity: '50 MW',
-      status: 'Active',
-      coordinates: { latitude: '10.3833° N', longitude: '78.8001° E' },
-      metrics: { dailyGeneration: '200 MWh', monthlyGeneration: '6000 MWh', yearlyGeneration: '72000 MWh', efficiency: '85%' }
+      capacity: '1000',
+      grid: 'TANGEDCO',
+      serviceNumber: '069534460069',
+      status: 'Active'
     },
-    {
-      id: 'PS2',
-      name: 'Madurai Solar Farm',
-      type: 'SOLAR',
-      siteType: 'PRODUCTION',
-      location: 'Madurai, Tamil Nadu',
-      capacity: '45 MW',
-      status: 'Active',
-      coordinates: { latitude: '9.9252° N', longitude: '78.1198° E' },
-      metrics: { dailyGeneration: '180 MWh', monthlyGeneration: '5400 MWh', yearlyGeneration: '64800 MWh', efficiency: '83%' }
-    },
-    {
-      id: 'PS3',
-      name: 'Trichy Solar Park',
-      type: 'SOLAR',
-      siteType: 'PRODUCTION',
-      location: 'Trichy, Tamil Nadu',
-      capacity: '55 MW',
-      status: 'Active',
-      coordinates: { latitude: '10.7905° N', longitude: '78.7047° E' },
-      metrics: { dailyGeneration: '220 MWh', monthlyGeneration: '6600 MWh', yearlyGeneration: '79200 MWh', efficiency: '86%' }
-    },
-    {
-      id: 'PS4',
-      name: 'Salem Solar Complex',
-      type: 'SOLAR',
-      siteType: 'PRODUCTION',
-      location: 'Salem, Tamil Nadu',
-      capacity: '40 MW',
-      status: 'Active',
-      coordinates: { latitude: '11.6643° N', longitude: '78.1460° E' },
-      metrics: { dailyGeneration: '160 MWh', monthlyGeneration: '4800 MWh', yearlyGeneration: '57600 MWh', efficiency: '82%' }
-    },
-    {
-      id: 'PS5',
-      name: 'Erode Solar Plant',
-      type: 'SOLAR',
-      siteType: 'PRODUCTION',
-      location: 'Erode, Tamil Nadu',
-      capacity: '48 MW',
-      status: 'Active',
-      coordinates: { latitude: '11.3410° N', longitude: '77.7172° E' },
-      metrics: { dailyGeneration: '192 MWh', monthlyGeneration: '5760 MWh', yearlyGeneration: '69120 MWh', efficiency: '84%' }
-    },
-    {
-      id: 'PS6',
-      name: 'Coimbatore Solar Farm',
-      type: 'SOLAR',
-      siteType: 'PRODUCTION',
-      location: 'Coimbatore, Tamil Nadu',
-      capacity: '52 MW',
-      status: 'Active',
-      coordinates: { latitude: '11.0168° N', longitude: '76.9558° E' },
-      metrics: { dailyGeneration: '208 MWh', monthlyGeneration: '6240 MWh', yearlyGeneration: '74880 MWh', efficiency: '85%' }
-    },
-
     // Wind Production Sites
     {
       id: 'PW1',
       name: 'Tirunelveli Wind Farm',
-      type: 'WIND',
-      siteType: 'PRODUCTION',
       location: 'Tirunelveli, Tamil Nadu',
-      capacity: '75 MW',
-      status: 'Active',
-      coordinates: { latitude: '8.7139° N', longitude: '77.7567° E' },
-      metrics: { dailyGeneration: '300 MWh', monthlyGeneration: '9000 MWh', yearlyGeneration: '108000 MWh', efficiency: '80%' }
-    },
-    {
-      id: 'PW2',
-      name: 'Thoothukudi Wind Park',
       type: 'WIND',
       siteType: 'PRODUCTION',
-      location: 'Thoothukudi, Tamil Nadu',
-      capacity: '70 MW',
-      status: 'Active',
-      coordinates: { latitude: '8.7642° N', longitude: '78.1348° E' },
-      metrics: { dailyGeneration: '280 MWh', monthlyGeneration: '8400 MWh', yearlyGeneration: '100800 MWh', efficiency: '79%' }
+      capacity: '150',
+      grid: 'TANGEDCO',
+      serviceNumber: '069534460070',
+      status: 'Active'
     },
-    {
-      id: 'PW3',
-      name: 'Kanyakumari Wind Complex',
-      type: 'WIND',
-      siteType: 'PRODUCTION',
-      location: 'Kanyakumari, Tamil Nadu',
-      capacity: '80 MW',
-      status: 'Active',
-      coordinates: { latitude: '8.0883° N', longitude: '77.5385° E' },
-      metrics: { dailyGeneration: '320 MWh', monthlyGeneration: '9600 MWh', yearlyGeneration: '115200 MWh', efficiency: '82%' }
-    },
-    {
-      id: 'PW4',
-      name: 'Ramanathapuram Wind Farm',
-      type: 'WIND',
-      siteType: 'PRODUCTION',
-      location: 'Ramanathapuram, Tamil Nadu',
-      capacity: '65 MW',
-      status: 'Active',
-      coordinates: { latitude: '9.3639° N', longitude: '78.8395° E' },
-      metrics: { dailyGeneration: '260 MWh', monthlyGeneration: '7800 MWh', yearlyGeneration: '93600 MWh', efficiency: '78%' }
-    },
-    {
-      id: 'PW5',
-      name: 'Dindigul Wind Park',
-      type: 'WIND',
-      siteType: 'PRODUCTION',
-      location: 'Dindigul, Tamil Nadu',
-      capacity: '72 MW',
-      status: 'Active',
-      coordinates: { latitude: '10.3624° N', longitude: '77.9695° E' },
-      metrics: { dailyGeneration: '288 MWh', monthlyGeneration: '8640 MWh', yearlyGeneration: '103680 MWh', efficiency: '81%' }
-    },
-    {
-      id: 'PW6',
-      name: 'Theni Wind Complex',
-      type: 'WIND',
-      siteType: 'PRODUCTION',
-      location: 'Theni, Tamil Nadu',
-      capacity: '68 MW',
-      status: 'Active',
-      coordinates: { latitude: '10.0104° N', longitude: '77.4768° E' },
-      metrics: { dailyGeneration: '272 MWh', monthlyGeneration: '8160 MWh', yearlyGeneration: '97920 MWh', efficiency: '80%' }
-    },
-    {
-      id: 'PW7',
-      name: 'Tirupur Wind Farm',
-      type: 'WIND',
-      siteType: 'PRODUCTION',
-      location: 'Tirupur, Tamil Nadu',
-      capacity: '70 MW',
-      status: 'Active',
-      coordinates: { latitude: '11.1085° N', longitude: '77.3411° E' },
-      metrics: { dailyGeneration: '280 MWh', monthlyGeneration: '8400 MWh', yearlyGeneration: '100800 MWh', efficiency: '80%' }
-    },
-
-    // Wind Banking Sites
-    {
-      id: 'WB1',
-      name: 'Coimbatore Wind Banking',
-      type: 'WIND_BANKING',
-      siteType: 'PRODUCTION',
-      location: 'Coimbatore, Tamil Nadu',
-      capacity: '100 MW',
-      status: 'Active',
-      coordinates: { latitude: '11.0168° N', longitude: '76.9558° E' },
-      metrics: { dailyGeneration: '400 MWh', monthlyGeneration: '12000 MWh', yearlyGeneration: '144000 MWh', efficiency: '83%' }
-    },
-    {
-      id: 'WB2',
-      name: 'Tirunelveli Wind Banking',
-      type: 'WIND_BANKING',
-      siteType: 'PRODUCTION',
-      location: 'Tirunelveli, Tamil Nadu',
-      capacity: '120 MW',
-      status: 'Active',
-      coordinates: { latitude: '8.7139° N', longitude: '77.7567° E' },
-      metrics: { dailyGeneration: '480 MWh', monthlyGeneration: '14400 MWh', yearlyGeneration: '172800 MWh', efficiency: '84%' }
-    },
-    {
-      id: 'WB3',
-      name: 'Thoothukudi Wind Banking',
-      type: 'WIND_BANKING',
-      siteType: 'PRODUCTION',
-      location: 'Thoothukudi, Tamil Nadu',
-      capacity: '110 MW',
-      status: 'Active',
-      coordinates: { latitude: '8.7642° N', longitude: '78.1348° E' },
-      metrics: { dailyGeneration: '440 MWh', monthlyGeneration: '13200 MWh', yearlyGeneration: '158400 MWh', efficiency: '82%' }
-    },
-
     // Consumption Sites
     {
       id: 'CS1',
-      name: 'Polyspin Exports Ltd Expansion Unit',
-      type: 'INDUSTRIAL',
-      siteType: 'CONSUMPTION',
+      name: 'Polyspin Exports Ltd',
       location: 'Rajapalayam, Tamil Nadu',
-      status: 'Active',
-      coordinates: { latitude: '9.4533° N', longitude: '77.5577° E' },
-      metrics: { dailyConsumption: '100 MWh', monthlyConsumption: '3000 MWh', yearlyConsumption: '36000 MWh', peakDemand: '15 MW' }
+      type: 'Industrial',
+      siteType: 'CONSUMPTION',
+      capacity: '500',
+      grid: 'TANGEDCO',
+      serviceNumber: '069534460071',
+      status: 'Active'
     },
     {
       id: 'CS2',
       name: 'PEL Textiles',
-      type: 'INDUSTRIAL',
-      siteType: 'CONSUMPTION',
       location: 'Rajapalayam, Tamil Nadu',
-      status: 'Active',
-      coordinates: { latitude: '9.4533° N', longitude: '77.5577° E' },
-      metrics: { dailyConsumption: '80 MWh', monthlyConsumption: '2400 MWh', yearlyConsumption: '28800 MWh', peakDemand: '12 MW' }
+      type: 'Industrial',
+      siteType: 'CONSUMPTION',
+      capacity: '300',
+      grid: 'TANGEDCO',
+      serviceNumber: '069534460072',
+      status: 'Active'
     },
     {
       id: 'CS3',
-      name: 'M/s A. Ramar and Sons',
-      type: 'INDUSTRIAL',
-      siteType: 'CONSUMPTION',
+      name: 'M/s Ramar and Sons',
       location: 'Rajapalayam, Tamil Nadu',
-      status: 'Active',
-      coordinates: { latitude: '9.4533° N', longitude: '77.5577° E' },
-      metrics: { dailyConsumption: '90 MWh', monthlyConsumption: '2700 MWh', yearlyConsumption: '32400 MWh', peakDemand: '13 MW' }
+      type: 'Industrial',
+      siteType: 'CONSUMPTION',
+      capacity: '250',
+      grid: 'TANGEDCO',
+      serviceNumber: '069534460073',
+      status: 'Active'
     }
-  ]
+  ],
+  historicalData: {
+    PS1: [
+      {
+        timestamp: '2024-01-01T00:00:00Z',
+        c1: 789,
+        c2: 456,
+        c3: 123,
+        c4: 789,
+        c5: 456
+      }
+    ],
+    PW1: [
+      {
+        timestamp: '2024-01-01T00:00:00Z',
+        c1: 234,
+        c2: 567,
+        c3: 890,
+        c4: 123,
+        c5: 456
+      }
+    ],
+    CS1: [
+      {
+        timestamp: '2024-01-01T00:00:00Z',
+        c1: 123,
+        c2: 456,
+        c3: 789,
+        c4: 234,
+        c5: 567
+      }
+    ],
+    CS2: [
+      {
+        timestamp: '2024-01-01T00:00:00Z',
+        c1: 567,
+        c2: 890,
+        c3: 123,
+        c4: 456,
+        c5: 789
+      }
+    ],
+    CS3: [
+      {
+        timestamp: '2024-01-01T00:00:00Z',
+        c1: 890,
+        c2: 123,
+        c3: 456,
+        c4: 789,
+        c5: 234
+      }
+    ]
+  }
 };
 
 const apiService = {
@@ -397,110 +294,84 @@ const apiService = {
     return { success: true };
   },
 
-  async getDashboardData() {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const userSites = user.sites;
-      const productionSites = userSites.filter(id => id.startsWith('P'));
-      const consumptionSites = userSites.filter(id => id.startsWith('C'));
-
-      return {
-        success: true,
-        data: {
-          production: {
-            total: productionSites.length * 100,
-            windSites: productionSites.filter(id => id.startsWith('PW')).length,
-            solarSites: productionSites.filter(id => id.startsWith('PS')).length
-          },
-          consumption: {
-            total: consumptionSites.length * 50,
-            activeConsumers: consumptionSites.length,
-            available: productionSites.length * 100 - consumptionSites.length * 50
-          },
-          allocation: {
-            total: Math.floor(consumptionSites.length * 50 * 0.8),
-            recentAllocations: Math.min(2, consumptionSites.length),
-            available: Math.floor(consumptionSites.length * 50 * 0.2)
-          },
-          reports: {
-            total: userSites.length,
-            performance: 'Available',
-            efficiency: 'Updated'
-          }
-        }
-      };
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      throw error;
-    }
-  },
-
   async getSites(siteType = 'PRODUCTION') {
     try {
-      // Get current user from localStorage
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (!userData) {
-        throw new Error('User not authenticated');
-      }
-
-      // Filter sites based on user permissions and site type
-      const filteredSites = mockData.sites.filter(site => {
-        // Check if user has access to this site
-        const hasAccess = userData.sites.includes(site.id);
-        
-        // Check if site type matches
-        const isProductionSite = siteType === 'PRODUCTION' && 
-          (site.id.startsWith('PS') || site.id.startsWith('PW') || site.id.startsWith('WB'));
-        const isConsumptionSite = siteType === 'CONSUMPTION' && site.id.startsWith('CS');
-        
-        return hasAccess && (isProductionSite || isConsumptionSite);
-      });
-
-      return {
-        success: true,
-        data: filteredSites
-      };
+      // In a real app, this would be an API call
+      const sites = mockData.sites.filter(site => site.siteType === siteType);
+      return { success: true, data: sites };
     } catch (error) {
       console.error('Error fetching sites:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+      return { success: false, error: 'Failed to fetch sites' };
     }
   },
 
   async getSiteDetails(siteId) {
     try {
-      // Get current user from localStorage
-      const userData = JSON.parse(localStorage.getItem('user'));
-      if (!userData) {
-        throw new Error('User not authenticated');
-      }
-
-      // Check if user has access to this site
-      if (!userData.sites.includes(siteId)) {
-        throw new Error('Access denied to this site');
-      }
-
+      // In a real app, this would be an API call
       const site = mockData.sites.find(site => site.id === siteId);
+      const history = mockData.historicalData[siteId] || [];
+      
       if (!site) {
         throw new Error('Site not found');
       }
 
       return {
         success: true,
-        data: site
+        data: {
+          ...site,
+          history
+        }
       };
     } catch (error) {
       console.error('Error fetching site details:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+      return { success: false, error: 'Failed to fetch site details' };
+    }
+  },
+
+  async addHistoricalData(siteId, data) {
+    try {
+      // In a real app, this would be an API call
+      if (!mockData.historicalData[siteId]) {
+        mockData.historicalData[siteId] = [];
+      }
+      mockData.historicalData[siteId].push({
+        timestamp: new Date().toISOString(),
+        ...data
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error adding historical data:', error);
+      return { success: false, error: 'Failed to add historical data' };
+    }
+  },
+
+  async updateHistoricalData(siteId, timestamp, data) {
+    try {
+      // In a real app, this would be an API call
+      const siteHistory = mockData.historicalData[siteId];
+      const index = siteHistory.findIndex(item => item.timestamp === timestamp);
+      if (index !== -1) {
+        siteHistory[index] = { ...siteHistory[index], ...data };
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating historical data:', error);
+      return { success: false, error: 'Failed to update historical data' };
+    }
+  },
+
+  async deleteHistoricalData(siteId, timestamp) {
+    try {
+      // In a real app, this would be an API call
+      if (mockData.historicalData[siteId]) {
+        mockData.historicalData[siteId] = mockData.historicalData[siteId].filter(
+          item => item.timestamp !== timestamp
+        );
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting historical data:', error);
+      return { success: false, error: 'Failed to delete historical data' };
     }
   }
 };

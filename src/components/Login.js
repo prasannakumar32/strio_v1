@@ -1,98 +1,79 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  TextField, 
-  Button, 
-  Typography, 
-  Alert, 
-  Paper, 
-  styled 
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Box,
+  Alert,
+  CircularProgress
 } from '@mui/material';
-import logo from '../assets/logo.jpg';
-import { UserContext } from '../context/UserContext';
+import Logo from '../assets/logo.jpg';
+import apiService from '../services/api';
 
-const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useContext(UserContext);
-  const [credentials, setCredentials] = useState({
-    username: '',
-    password: ''
-  });
+function Login() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCredentials(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (error) setError('');
-  };
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { username, password } = credentials;
-
-    if (!username.trim() || !password) {
-      setError('Please enter both username and password');
-      return;
-    }
-
+    setError('');
     setLoading(true);
+
     try {
-      const success = await login(username, password);
-      if (success) {
+      const response = await apiService.login(username, password);
+      if (response.success) {
+        // Login successful, redirect to dashboard
         navigate('/dashboard');
       } else {
-        setError('Invalid username or password');
+        setError(response.error || 'Invalid username or password');
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      console.error('Login error:', err);
+      setError('An error occurred during login');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="xs">
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          marginTop: 8, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          padding: 3 
+    <Container component="main" maxWidth="xs">
+      <Box
+        sx={{
+          marginTop: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
+        <Paper
+          elevation={3}
+          sx={{
+            padding: 4,
+            display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            width: '100%'
+            width: '100%',
+            borderRadius: 2,
           }}
         >
-          <img 
-            src={logo} 
-            alt="Company Logo" 
-            style={{ 
-              width: 100, 
-              height: 100, 
-              marginBottom: 16 
-            }} 
-          />
-          <Typography component="h1" variant="h5">
-            Sign in
+          <Box sx={{ mb: 3 }}>
+            <img src={Logo} alt="STRIO" style={{ width: 120, height: 'auto' }} />
+          </Box>
+          <Typography variant="h6" sx={{ mb: 3 }}>
+            Energy Management Dashboard
           </Typography>
-          <Box 
-            component="form" 
-            onSubmit={handleSubmit} 
-            sx={{ mt: 1, width: '100%' }}
-          >
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, width: '100%' }}>
+              {error}
+            </Alert>
+          )}
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
             <TextField
               margin="normal"
               required
@@ -102,8 +83,10 @@ const Login = () => {
               name="username"
               autoComplete="username"
               autoFocus
-              value={credentials.username}
-              onChange={handleChange}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              sx={{ bgcolor: '#f8f9fa' }}
+              disabled={loading}
             />
             <TextField
               margin="normal"
@@ -114,28 +97,60 @@ const Login = () => {
               type="password"
               id="password"
               autoComplete="current-password"
-              value={credentials.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              sx={{ bgcolor: '#f8f9fa' }}
+              disabled={loading}
             />
-            {error && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-              </Alert>
-            )}
             <Button
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
               disabled={loading}
+              sx={{
+                mt: 3,
+                mb: 2,
+                bgcolor: '#1a237e',
+                '&:hover': {
+                  bgcolor: '#0d47a1',
+                },
+                position: 'relative'
+              }}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? (
+                <CircularProgress
+                  size={24}
+                  sx={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    marginTop: '-12px',
+                    marginLeft: '-12px',
+                  }}
+                />
+              ) : (
+                'Sign In'
+              )}
             </Button>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Demo Credentials:
+              </Typography>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Username: strioadmin | Password: admin123
+              </Typography>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Username: striouser | Password: user123
+              </Typography>
+              <Typography variant="body2" color="text.secondary" align="center">
+                Username: testcase1 | Password: test123
+              </Typography>
+            </Box>
           </Box>
-        </Box>
-      </Paper>
+        </Paper>
+      </Box>
     </Container>
   );
-};
+}
 
 export default Login;

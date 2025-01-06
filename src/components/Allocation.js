@@ -1,814 +1,719 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Button, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  TextField, 
-  Grid, 
-  Select, 
-  MenuItem, 
-  FormControl, 
-  InputLabel, 
-  IconButton, 
-  Fab, 
-  Chip, 
-  Alert 
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  IconButton,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  Link,
+  Divider,
+  Tooltip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import Layout from './Layout';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import DownloadIcon from '@mui/icons-material/Download';
+import UpdateIcon from '@mui/icons-material/Update';
+import { useStorage } from '../context/StorageContext';
+import AllocationEditForm from './AllocationEditForm';
+import { PRODUCTION_SITES, CONSUMPTION_SITES } from '../data/sites';
+import { useNavigate } from 'react-router-dom';
 
-const Allocation = () => {
-  const [productionAllocations, setProductionAllocations] = useState([]);
-  const [consumptionAllocations, setConsumptionAllocations] = useState([]);
-  const [openProductionDialog, setOpenProductionDialog] = useState(false);
-  const [openConsumptionDialog, setOpenConsumptionDialog] = useState(false);
-  const [editingProduction, setEditingProduction] = useState(null);
-  const [editingConsumption, setEditingConsumption] = useState(null);
-  const [newProduction, setNewProduction] = useState({
-    month: '',
-    c1: '',
-    c2: '',
-    c3: '',
-    c4: '',
-    c5: '',
-    total: ''
+function Allocation() {
+  const [allocationDetails, setAllocationDetails] = useState([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedSite, setSelectedSite] = useState(null);
+  const [selectedType, setSelectedType] = useState(null);
+  const [updateType, setUpdateType] = useState(null); // 'edit' or 'update'
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [productionSites, setProductionSites] = useState(PRODUCTION_SITES);
+  const [consumptionSites, setConsumptionSites] = useState(CONSUMPTION_SITES);
+  const [allocationSummary, setAllocationSummary] = useState({
+    totalProduction: 0,
+    totalAllocated: 0,
+    totalBanking: 0,
+    lapse: 0
   });
-  const [newConsumption, setNewConsumption] = useState({
-    month: '',
-    c1: '',
-    c2: '',
-    c3: '',
-    c4: '',
-    c5: '',
-    total: ''
-  });
-  const [allocatedResults, setAllocatedResults] = useState([]);
 
-  // Load allocations on component mount
-  useEffect(() => {
+  const navigate = useNavigate();
+  const { updateMonthlyData } = useStorage();
+
+  const handleViewDetails = (site, type) => {
     try {
-      console.log('Loading allocations...');
-      const userStr = localStorage.getItem('user');
-      console.log('User data on load:', userStr);
-
-      if (!userStr) {
-        console.warn('No user data found');
-        return;
-      }
-
-      const user = JSON.parse(userStr);
-      const userId = user?.id || 'default';
-      console.log('Using user ID:', userId);
-
-      // Load allocations with debug logging
-      const storedProductionAllocations = JSON.parse(
-        localStorage.getItem(`productionAllocations_${userId}`) || '[]'
-      );
-      console.log('Loaded production allocations:', storedProductionAllocations);
-
-      const storedConsumptionAllocations = JSON.parse(
-        localStorage.getItem(`consumptionAllocations_${userId}`) || '[]'
-      );
-      console.log('Loaded consumption allocations:', storedConsumptionAllocations);
-
-      setProductionAllocations(storedProductionAllocations);
-      setConsumptionAllocations(storedConsumptionAllocations);
-    } catch (error) {
-      console.error('Error loading allocations:', error);
-    }
-  }, []);
-
-  // Add new production allocation
-  const handleAddProduction = () => {
-    setEditingProduction(null);
-    setNewProduction({
-      month: '',
-      c1: '',
-      c2: '',
-      c3: '',
-      c4: '',
-      c5: '',
-      total: ''
-    });
-    setOpenProductionDialog(true);
-  };
-
-  // Add new consumption allocation
-  const handleAddConsumption = () => {
-    setEditingConsumption(null);
-    setNewConsumption({
-      month: '',
-      c1: '',
-      c2: '',
-      c3: '',
-      c4: '',
-      c5: '',
-      total: ''
-    });
-    setOpenConsumptionDialog(true);
-  };
-
-  // Production handlers
-  const handleEditProduction = (allocation) => {
-    setEditingProduction(allocation);
-    setNewProduction({
-      month: allocation.month,
-      c1: allocation.c1,
-      c2: allocation.c2,
-      c3: allocation.c3,
-      c4: allocation.c4,
-      c5: allocation.c5,
-      total: allocation.total
-    });
-    setOpenProductionDialog(true);
-  };
-
-  const handleDeleteProduction = (id) => {
-    try {
-      if (!id) {
-        console.error('No allocation ID provided');
-        return;
-      }
-
-      if (window.confirm('Are you sure you want to delete this production allocation?')) {
-        const userStr = localStorage.getItem('user');
-        const userId = userStr ? JSON.parse(userStr)?.id : 'default';
-        
-        const updatedAllocations = productionAllocations.filter(
-          allocation => allocation.id !== id
-        );
-        
-        setProductionAllocations(updatedAllocations);
-        localStorage.setItem(
-          `productionAllocations_${userId}`, 
-          JSON.stringify(updatedAllocations)
-        );
-      }
-    } catch (error) {
-      console.error('Delete operation failed:', error);
-      alert('Failed to delete allocation. Please try again.');
-    }
-  };
-
-  // Consumption handlers
-  const handleEditConsumption = (allocation) => {
-    setEditingConsumption(allocation);
-    setNewConsumption({
-      month: allocation.month,
-      c1: allocation.c1,
-      c2: allocation.c2,
-      c3: allocation.c3,
-      c4: allocation.c4,
-      c5: allocation.c5,
-      total: allocation.total
-    });
-    setOpenConsumptionDialog(true);
-  };
-
-  const handleDeleteConsumption = (id) => {
-    try {
-      if (!id) {
-        console.error('No allocation ID provided');
-        return;
-      }
-
-      if (window.confirm('Are you sure you want to delete this consumption allocation?')) {
-        const userStr = localStorage.getItem('user');
-        const userId = userStr ? JSON.parse(userStr)?.id : 'default';
-        
-        const updatedAllocations = consumptionAllocations.filter(
-          allocation => allocation.id !== id
-        );
-        
-        setConsumptionAllocations(updatedAllocations);
-        localStorage.setItem(
-          `consumptionAllocations_${userId}`, 
-          JSON.stringify(updatedAllocations)
-        );
-      }
-    } catch (error) {
-      console.error('Delete operation failed:', error);
-      alert('Failed to delete allocation. Please try again.');
-    }
-  };
-
-  // Also add total calculation functions
-  const calculateProductionTotal = (data) => {
-    const total = ['c1', 'c2', 'c3', 'c4', 'c5']
-      .reduce((sum, field) => sum + Number(data[field] || 0), 0);
-    return total;
-  };
-
-  const calculateConsumptionTotal = (data) => {
-    const total = ['c1', 'c2', 'c3', 'c4', 'c5']
-      .reduce((sum, field) => sum + Number(data[field] || 0), 0);
-    return total;
-  };
-
-  // Update submit handlers to include total calculation
-  const handleProductionSubmit = () => {
-    try {
-      const userStr = localStorage.getItem('user');
-      const userId = userStr ? JSON.parse(userStr)?.id : 'default';
-
-      const total = calculateProductionTotal(newProduction);
-      const newEntry = {
-        id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: userId,
-        siteName: "Tirunelveli Wind Farm",
-        date: new Date().toISOString(),
-        ...newProduction,
-        total
-      };
-
-      const updatedAllocations = editingProduction
-        ? productionAllocations.map(item => 
-            item.id === editingProduction.id ? { ...item, ...newProduction, total } : item
-          )
-        : [...productionAllocations, newEntry];
-
-      setProductionAllocations(updatedAllocations);
-      localStorage.setItem(`productionAllocations_${userId}`, JSON.stringify(updatedAllocations));
-      setOpenProductionDialog(false);
-      setEditingProduction(null);
-      setNewProduction({
-        month: '',
-        c1: '',
-        c2: '',
-        c3: '',
-        c4: '',
-        c5: '',
-        total: ''
-      });
-    } catch (error) {
-      console.error('Submit failed:', error);
-      alert('Failed to save allocation. Please try again.');
-    }
-  };
-
-  const handleConsumptionSubmit = () => {
-    try {
-      const userStr = localStorage.getItem('user');
-      const userId = userStr ? JSON.parse(userStr)?.id : 'default';
-
-      const total = calculateConsumptionTotal(newConsumption);
-      const newEntry = {
-        id: `cons_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: userId,
-        siteName: "Chennai Industrial Park",
-        date: new Date().toISOString(),
-        ...newConsumption,
-        total
-      };
-
-      const updatedAllocations = editingConsumption
-        ? consumptionAllocations.map(item => 
-            item.id === editingConsumption.id ? { ...item, ...newConsumption, total } : item
-          )
-        : [...consumptionAllocations, newEntry];
-
-      setConsumptionAllocations(updatedAllocations);
-      localStorage.setItem(`consumptionAllocations_${userId}`, JSON.stringify(updatedAllocations));
-      setOpenConsumptionDialog(false);
-      setEditingConsumption(null);
-      setNewConsumption({
-        month: '',
-        c1: '',
-        c2: '',
-        c3: '',
-        c4: '',
-        c5: '',
-        total: ''
-      });
-    } catch (error) {
-      console.error('Submit failed:', error);
-      alert('Failed to save allocation. Please try again.');
-    }
-  };
-
-  // Add this function before the return statement
-  const handleAutoAllocate = () => {
-    try {
-      // Debug logging
-      console.log('Starting auto allocation...');
-      console.log('Production allocations:', productionAllocations);
-      console.log('Consumption allocations:', consumptionAllocations);
-
-      // Validate if we have data to allocate
-      if (!productionAllocations.length || !consumptionAllocations.length) {
-        throw new Error('Please add both production and consumption data before allocation');
-      }
-
-      // Group allocations by month
-      const monthlyAllocations = {};
-      
-      // First, collect all unique months
-      const allMonths = new Set([
-        ...productionAllocations.map(p => p.month),
-        ...consumptionAllocations.map(c => c.month)
-      ]);
-
-      // Initialize monthly allocations
-      allMonths.forEach(month => {
-        monthlyAllocations[month] = {
-          production: productionAllocations.filter(p => p.month === month),
-          consumption: consumptionAllocations.filter(c => c.month === month)
+      if (type === 'PRODUCTION') {
+        // Map the site IDs to their correct view IDs
+        const siteIdMapping = {
+          'TIRUNELVELI': 'PW1',
+          'PUDUKOTTAI': 'PS1'
         };
+        
+        const siteId = siteIdMapping[site.id];
+        if (siteId) {
+          if (siteId === 'PS1' || siteId === 'PW1') {
+            navigate(`/production/${siteId}`);
+          } else {
+            navigate(`/production/view/${siteId}`);
+          }
+        } else {
+          console.error('Unknown production site:', site.id);
+        }
+      } else if (type === 'CONSUMPTION') {
+        // Use the site ID directly from the consumption site
+        if (site.id) {
+          navigate(`/consumption/view/${site.id}`);
+        } else {
+          console.error('Unknown consumption site:', site);
+        }
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
+  };
+
+  const handleEditSite = (site, type) => {
+    setSelectedSite(site);
+    setSelectedType(type);
+    setUpdateType('edit');
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateSite = (site, type) => {
+    setSelectedSite(site);
+    setSelectedType(type);
+    setUpdateType('update');
+    setEditDialogOpen(true);
+  };
+
+  const handleCloseDialog = async (updatedData) => {
+    if (updatedData) {
+      try {
+        const formattedData = {
+          C1: updatedData.C1 || "0",
+          C2: updatedData.C2 || "0",
+          C3: updatedData.C3 || "0",
+          C4: updatedData.C4 || "0",
+          C5: updatedData.C5 || "0"
+        };
+
+        const updateObj = {
+          siteId: selectedSite.id,
+          month: 'Dec',
+          year: '2025',
+          type: selectedType,
+          values: formattedData,
+          updateType: updateType
+        };
+
+        await updateMonthlyData(updateObj);
+
+        // Update local state based on the type and update type
+        if (selectedType === 'PRODUCTION') {
+          const updatedSites = productionSites.map(site => 
+            site.id === selectedSite.id 
+              ? {
+                  ...site,
+                  unitValues: {
+                    ...site.unitValues,
+                    [updateType === 'update' ? 'fromBanking' : 'fromPowerplant']: formattedData
+                  }
+                }
+              : site
+          );
+          setProductionSites(updatedSites);
+        } else if (selectedType === 'CONSUMPTION') {
+          const updatedSites = consumptionSites.map(site => 
+            site.id === selectedSite.id 
+              ? {
+                  ...site,
+                  unitValues: formattedData
+                }
+              : site
+          );
+          setConsumptionSites(updatedSites);
+        }
+
+        // Recalculate allocation summary
+        const summary = calculateAllocationSummary();
+        setAllocationSummary(summary);
+        setRefreshKey(prev => prev + 1);
+      } catch (error) {
+        console.error('Error updating site data:', error);
+      }
+    }
+    setEditDialogOpen(false);
+    setUpdateType(null);
+  };
+
+  const calculateAllocationSummary = () => {
+    let totalProduction = 0;
+    let totalAllocated = 0;
+    let totalBanking = 0;
+
+    productionSites.forEach(site => {
+      const powerplant = site.unitValues?.fromPowerplant || {};
+      const banking = site.unitValues?.fromBanking || {};
+
+      const production = Object.entries(powerplant)
+        .filter(([key]) => key.startsWith('C'))
+        .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+      const bankingTotal = Object.entries(banking)
+        .filter(([key]) => key.startsWith('C'))
+        .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+      totalProduction += production;
+      totalBanking += bankingTotal;
+    });
+
+    consumptionSites.forEach(site => {
+      const values = site.unitValues || {};
+      const allocated = Object.entries(values)
+        .filter(([key]) => key.startsWith('C'))
+        .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+      totalAllocated += allocated;
+    });
+
+    return {
+      totalProduction,
+      totalAllocated,
+      totalBanking,
+      lapse: Math.max(0, totalProduction - totalAllocated - totalBanking)
+    };
+  };
+
+  const handleAutoAllocate = async () => {
+    try {
+      // Step 1: Separate sites by type
+      const solarSites = productionSites.filter(site => site.name.toLowerCase().includes('solar'));
+      const windSites = productionSites.filter(site => site.name.toLowerCase().includes('wind'));
+      
+      // Deep clone the sites to work with
+      const updatedProductionSites = [...productionSites];
+      
+      // Initialize banking units for wind sites
+      windSites.forEach(windSite => {
+        const siteIndex = updatedProductionSites.findIndex(s => s.id === windSite.id);
+        if (siteIndex !== -1) {
+          updatedProductionSites[siteIndex] = {
+            ...windSite,
+            unitValues: {
+              ...windSite.unitValues,
+              fromBanking: { C1: "0", C2: "0", C3: "0", C4: "0", C5: "0" }
+            }
+          };
+        }
       });
 
-      const allocations = [];
+      // Step 2: Calculate total consumption per slot
+      const totalConsumption = {
+        C1: 0, C2: 0, C3: 0, C4: 0, C5: 0
+      };
 
-      // Process each month
-      Object.entries(monthlyAllocations).forEach(([month, data]) => {
-        const { production, consumption } = data;
-
-        // Skip if no matching data for the month
-        if (!production.length || !consumption.length) return;
-
-        production.forEach(prod => {
-          consumption.forEach(cons => {
-            // Handle peak hours (C3, C4)
-            const peakValues = {
-              c3: Math.min(Number(prod.c3) || 0, Number(cons.c3) || 0),
-              c4: Math.min(Number(prod.c4) || 0, Number(cons.c4) || 0)
-            };
-
-            if (peakValues.c3 > 0 || peakValues.c4 > 0) {
-              allocations.push({
-                id: `peak_${Date.now()}_${Math.random()}`,
-                fromSite: prod.siteName,
-                toSite: cons.siteName,
-                month: month,
-                c1: 0,
-                c2: 0,
-                c3: peakValues.c3,
-                c4: peakValues.c4,
-                c5: 0,
-                total: peakValues.c3 + peakValues.c4,
-                type: 'peak',
-                date: new Date().toISOString()
-              });
-            }
-
-            // Handle non-peak hours (C1, C2, C5)
-            const nonPeakValues = {
-              c1: Math.min(Number(prod.c1) || 0, Number(cons.c1) || 0),
-              c2: Math.min(Number(prod.c2) || 0, Number(cons.c2) || 0),
-              c5: Math.min(Number(prod.c5) || 0, Number(cons.c5) || 0)
-            };
-
-            if (nonPeakValues.c1 > 0 || nonPeakValues.c2 > 0 || nonPeakValues.c5 > 0) {
-              allocations.push({
-                id: `nonpeak_${Date.now()}_${Math.random()}`,
-                fromSite: prod.siteName,
-                toSite: cons.siteName,
-                month: month,
-                c1: nonPeakValues.c1,
-                c2: nonPeakValues.c2,
-                c3: 0,
-                c4: 0,
-                c5: nonPeakValues.c5,
-                total: nonPeakValues.c1 + nonPeakValues.c2 + nonPeakValues.c5,
-                type: 'non-peak',
-                date: new Date().toISOString()
-              });
-            }
-
-            // Handle banking for remaining peak power
-            const remainingPeak = {
-              c3: Math.max(0, Number(prod.c3 || 0) - Number(cons.c3 || 0)),
-              c4: Math.max(0, Number(prod.c4 || 0) - Number(cons.c4 || 0))
-            };
-
-            if (remainingPeak.c3 > 0 || remainingPeak.c4 > 0) {
-              allocations.push({
-                id: `banking_${Date.now()}_${Math.random()}`,
-                fromSite: prod.siteName,
-                toSite: 'Banking',
-                month: month,
-                c1: 0,
-                c2: 0,
-                c3: remainingPeak.c3,
-                c4: remainingPeak.c4,
-                c5: 0,
-                total: remainingPeak.c3 + remainingPeak.c4,
-                type: 'banking',
-                isBanking: true,
-                date: new Date().toISOString()
-              });
-            }
+      consumptionSites.forEach(site => {
+        const values = site.unitValues || {};
+        Object.entries(values)
+          .filter(([key]) => key.startsWith('C'))
+          .forEach(([key, value]) => {
+            totalConsumption[key] += Number(value) || 0;
           });
+      });
+
+      // Step 3: Allocate current production (non-banking)
+      let remainingConsumption = { ...totalConsumption };
+      
+      // First allocate from solar sites (no banking)
+      solarSites.forEach(site => {
+        const powerplant = site.unitValues?.fromPowerplant || {};
+        Object.keys(remainingConsumption).forEach(slot => {
+          const production = Number(powerplant[slot]) || 0;
+          remainingConsumption[slot] = Math.max(0, remainingConsumption[slot] - production);
         });
       });
 
-      if (!allocations.length) {
-        throw new Error('No valid allocations could be made');
-      }
+      // Then allocate from wind sites current production
+      windSites.forEach(site => {
+        const powerplant = site.unitValues?.fromPowerplant || {};
+        Object.keys(remainingConsumption).forEach(slot => {
+          const production = Number(powerplant[slot]) || 0;
+          remainingConsumption[slot] = Math.max(0, remainingConsumption[slot] - production);
+        });
+      });
 
-      // Update state and storage
-      setAllocatedResults(allocations);
-      const userStr = localStorage.getItem('user');
-      const userId = userStr ? JSON.parse(userStr)?.id : 'default';
-      localStorage.setItem(`autoAllocations_${userId}`, JSON.stringify(allocations));
+      // Step 4: Handle over/under consumption
+      windSites.forEach(windSite => {
+        const siteIndex = updatedProductionSites.findIndex(s => s.id === windSite.id);
+        if (siteIndex !== -1) {
+          const powerplant = windSite.unitValues?.fromPowerplant || {};
+          const currentBanking = updatedProductionSites[siteIndex].unitValues?.fromBanking || {};
+          
+          Object.keys(remainingConsumption).forEach(slot => {
+            const production = Number(powerplant[slot]) || 0;
+            const consumption = totalConsumption[slot];
+            const remaining = remainingConsumption[slot];
 
-      console.log('Allocation completed successfully:', allocations);
+            if (remaining > 0) {
+              // Over-consumption: Use banking if available
+              const bankingUsed = Math.min(remaining, Number(currentBanking[slot]) || 0);
+              currentBanking[slot] = String(bankingUsed);
+              remainingConsumption[slot] -= bankingUsed;
+            } else {
+              // Under-consumption: Add to banking
+              const excess = production - consumption;
+              if (excess > 0) {
+                currentBanking[slot] = String(excess);
+              }
+            }
+          });
 
+          // Update the site with new banking values
+          updatedProductionSites[siteIndex] = {
+            ...updatedProductionSites[siteIndex],
+            unitValues: {
+              ...updatedProductionSites[siteIndex].unitValues,
+              fromBanking: currentBanking
+            }
+          };
+        }
+      });
+
+      // Step 5: Calculate lapse (only if there's still remaining consumption)
+      const lapse = Object.values(remainingConsumption).reduce((sum, val) => sum + val, 0);
+
+      // Update production sites with new banking values
+      setProductionSites(updatedProductionSites);
+      
+      // Recalculate allocation summary
+      const summary = calculateAllocationSummary();
+      setAllocationSummary(summary);
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Auto allocation failed:', error);
-      alert(error.message || 'Failed to perform auto allocation. Please try again.');
+      console.error('Error in auto allocation:', error);
     }
   };
 
-  // Add a new section to show allocation results
-  const renderAllocationResults = () => {
-    if (!allocatedResults.length) return null;
+  useEffect(() => {
+    const summary = calculateAllocationSummary();
+    setAllocationSummary(summary);
+  }, [refreshKey, productionSites, consumptionSites]);
 
-    // Calculate summary statistics
-    const summary = allocatedResults.reduce((acc, allocation) => {
-      if (allocation.isBanking) {
-        acc.totalBanking += allocation.total;
-      } else {
-        acc.totalAllocated += allocation.total;
-      }
-      return acc;
-    }, { totalAllocated: 0, totalBanking: 0 });
+  const renderProductionTable = () => (
+    <Box sx={{ mb: 4 }}>
+      <Typography variant="h6" sx={{ mb: 2, color: '#1a237e' }}>Production Sites</Typography>
+      <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#1a237e' }}>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Site Name</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C1 (Non-Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C2 (Non-Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C3 (Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C4 (Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C5 (Non-Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">Total</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {productionSites.map((site) => {
+              const powerplant = site.unitValues?.fromPowerplant || {};
+              const banking = site.unitValues?.fromBanking || {};
+              
+              const powerplantTotal = Object.entries(powerplant)
+                .filter(([key]) => key.startsWith('C'))
+                .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+              
+              const bankingTotal = Object.entries(banking)
+                .filter(([key]) => key.startsWith('C'))
+                .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
 
-    // Calculate total production
-    const totalProduction = productionAllocations.reduce((sum, prod) => sum + (prod.total || 0), 0);
-    const lapse = totalProduction - (summary.totalAllocated + summary.totalBanking);
+              return (
+                <TableRow key={site.id}>
+                  <TableCell>{site.name}</TableCell>
+                  <TableCell>{site.location}</TableCell>
+                  <TableCell align="right">{powerplant.C1 || 0}</TableCell>
+                  <TableCell align="right">{powerplant.C2 || 0}</TableCell>
+                  <TableCell align="right">{powerplant.C3 || 0}</TableCell>
+                  <TableCell align="right">{powerplant.C4 || 0}</TableCell>
+                  <TableCell align="right">{powerplant.C5 || 0}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold', color: '#1a237e' }}>
+                    {powerplantTotal}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                      <Tooltip title="Edit Production">
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleEditSite(site, 'PRODUCTION')}
+                          sx={{ color: '#1a237e' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {site.name.toLowerCase().includes('wind') && (
+                        <Tooltip title="Update Banking">
+                          <IconButton 
+                            size="small"
+                            onClick={() => handleUpdateSite(site, 'PRODUCTION')}
+                            sx={{ color: '#2e7d32' }}
+                          >
+                            <UpdateIcon fontSize="small" />
+                          </IconButton>
+                      </Tooltip>
+                      )}
+                      <Tooltip title="View Details">
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleViewDetails(site, 'PRODUCTION')}
+                          sx={{ color: '#2e7d32' }}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+
+  const renderConsumptionTable = () => (
+    <Box sx={{ mb: 4 }}>
+      <Typography variant="h6" sx={{ mb: 2, color: '#1a237e' }}>Consumption Sites</Typography>
+      <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
+        <Table>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#1a237e' }}>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Site Name</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Location</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C1 (Non-Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C2 (Non-Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C3 (Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C4 (Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C5 (Non-Peak)</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">Total</TableCell>
+              <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {consumptionSites.map((site) => {
+              const values = site.unitValues || {};
+              const total = Object.entries(values)
+                .filter(([key]) => key.startsWith('C'))
+                .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+              return (
+                <TableRow key={site.id}>
+                  <TableCell>{site.name}</TableCell>
+                  <TableCell>{site.location}</TableCell>
+                  <TableCell align="right">{values.C1 || 0}</TableCell>
+                  <TableCell align="right">{values.C2 || 0}</TableCell>
+                  <TableCell align="right">{values.C3 || 0}</TableCell>
+                  <TableCell align="right">{values.C4 || 0}</TableCell>
+                  <TableCell align="right">{values.C5 || 0}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold', color: '#1a237e' }}>{total}</TableCell>
+                  <TableCell align="center">
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                      <Tooltip title="Edit Consumption">
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleEditSite(site, 'CONSUMPTION')}
+                          sx={{ color: '#1a237e' }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="View Details">
+                        <IconButton 
+                          size="small"
+                          onClick={() => handleViewDetails(site, 'CONSUMPTION')}
+                          sx={{ color: '#2e7d32' }}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Box>
+  );
+
+  const renderAllocationDetailsTable = () => {
+    const getAllocations = () => {
+      const allocations = [];
+
+      productionSites.forEach(prodSite => {
+        consumptionSites.forEach(consSite => {
+          const consValues = consSite.unitValues || {};
+          const total = Object.entries(consValues)
+            .filter(([key]) => key.startsWith('C'))
+            .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+          if (total > 0) {
+            allocations.push({
+              month: 'Dec',
+              fromSite: prodSite,
+              toSite: consSite,
+              values: {
+                C1: consValues.C1 || 0,
+                C2: consValues.C2 || 0,
+                C3: consValues.C3 || 0,
+                C4: consValues.C4 || 0,
+                C5: consValues.C5 || 0
+              },
+              total,
+              type: 'Allocation'
+            });
+          }
+        });
+
+        const banking = prodSite.unitValues?.fromBanking || {};
+        const bankingTotal = Object.entries(banking)
+          .filter(([key]) => key.startsWith('C'))
+          .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+        if (bankingTotal > 0) {
+          allocations.push({
+            month: 'Dec',
+            fromSite: prodSite,
+            toSite: { name: 'Banking', type: 'BANKING' },
+            values: {
+              C1: banking.C1 || 0,
+              C2: banking.C2 || 0,
+              C3: banking.C3 || 0,
+              C4: banking.C4 || 0,
+              C5: banking.C5 || 0
+            },
+            total: bankingTotal,
+            type: 'Banking'
+          });
+        }
+
+        const powerplant = prodSite.unitValues?.fromPowerplant || {};
+        const production = Object.entries(powerplant)
+          .filter(([key]) => key.startsWith('C'))
+          .reduce((sum, [_, val]) => sum + (Number(val) || 0), 0);
+
+        const allocated = allocations
+          .filter(a => a.fromSite.id === prodSite.id)
+          .reduce((sum, a) => sum + a.total, 0);
+
+        const lapse = Math.max(0, production - allocated);
+        if (lapse > 0) {
+          allocations.push({
+            month: 'Dec',
+            fromSite: prodSite,
+            toSite: { name: 'Lapse', type: 'LAPSE' },
+            values: {
+              C1: Math.round(lapse * 0.2),
+              C2: Math.round(lapse * 0.2),
+              C3: Math.round(lapse * 0.2),
+              C4: Math.round(lapse * 0.2),
+              C5: Math.round(lapse * 0.2)
+            },
+            total: lapse,
+            type: 'Lapse'
+          });
+        }
+      });
+
+      return allocations;
+    };
+
+    const allocations = getAllocations();
 
     return (
-      <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Allocation Results
-        </Typography>
-
-        {/* Summary Cards */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              p: 2, 
-              flex: 1, 
-              bgcolor: 'primary.light',
-              color: 'primary.contrastText'
-            }}
-          >
-            <Typography variant="h6">Total Production</Typography>
-            <Typography variant="h4">{totalProduction} Units</Typography>
-          </Paper>
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              p: 2, 
-              flex: 1, 
-              bgcolor: 'success.light',
-              color: 'success.contrastText'
-            }}
-          >
-            <Typography variant="h6">Total Allocated</Typography>
-            <Typography variant="h4">{summary.totalAllocated} Units</Typography>
-          </Paper>
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              p: 2, 
-              flex: 1, 
-              bgcolor: 'warning.light',
-              color: 'warning.contrastText'
-            }}
-          >
-            <Typography variant="h6">Total Banking</Typography>
-            <Typography variant="h4">{summary.totalBanking} Units</Typography>
-          </Paper>
-          <Paper 
-            elevation={2} 
-            sx={{ 
-              p: 2, 
-              flex: 1, 
-              bgcolor: 'error.light',
-              color: 'error.contrastText'
-            }}
-          >
-            <Typography variant="h6">Lapse</Typography>
-            <Typography variant="h4">{Math.max(0, lapse)} Units</Typography>
-          </Paper>
-        </Box>
-
-        {/* Detailed Allocation Table */}
-        <TableContainer>
+      <Box sx={{ mb: 4 }}>
+        <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>Month</TableCell>
-                <TableCell>From Site</TableCell>
-                <TableCell>To Site</TableCell>
-                <TableCell>C1 (Non-Peak)</TableCell>
-                <TableCell>C2 (Non-Peak)</TableCell>
-                <TableCell>C3 (Peak)</TableCell>
-                <TableCell>C4 (Peak)</TableCell>
-                <TableCell>C5 (Non-Peak)</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Balance</TableCell>
+              <TableRow sx={{ bgcolor: '#1a237e' }}>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Month</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>From Site</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>To Site</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C1 (Non-Peak)</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C2 (Non-Peak)</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C3 (Peak)</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C4 (Peak)</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">C5 (Non-Peak)</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="right">Total</TableCell>
+                <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Type</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {allocatedResults.map((allocation, index) => {
-                // Calculate running balance
-                const runningTotal = allocatedResults
-                  .slice(0, index + 1)
-                  .reduce((sum, a) => sum + a.total, 0);
-                const balance = totalProduction - runningTotal;
-
-                return (
-                  <TableRow 
-                    key={allocation.id}
-                    sx={{
-                      backgroundColor: allocation.isBanking 
-                        ? 'rgba(255, 244, 229, 0.5)' 
-                        : 'inherit'
+              {allocations.map((allocation, index) => (
+                <TableRow 
+                  key={index}
+                  sx={{ 
+                    bgcolor: allocation.type === 'Banking' 
+                      ? '#fff3e0' 
+                      : allocation.type === 'Lapse'
+                        ? '#ffebee'
+                        : 'inherit',
+                    '&:hover': {
+                      bgcolor: allocation.type === 'Banking' 
+                        ? '#ffe0b2' 
+                        : allocation.type === 'Lapse'
+                          ? '#ffcdd2'
+                          : '#f5f5f5'
+                    }
+                  }}
+                >
+                  <TableCell>{allocation.month}</TableCell>
+                  <TableCell>{allocation.fromSite.name}</TableCell>
+                  <TableCell>{allocation.toSite.name}</TableCell>
+                  <TableCell align="right">{allocation.values.C1}</TableCell>
+                  <TableCell align="right">{allocation.values.C2}</TableCell>
+                  <TableCell align="right">{allocation.values.C3}</TableCell>
+                  <TableCell align="right">{allocation.values.C4}</TableCell>
+                  <TableCell align="right">{allocation.values.C5}</TableCell>
+                  <TableCell 
+                    align="right"
+                    sx={{ 
+                      fontWeight: 'bold',
+                      color: allocation.type === 'Banking' 
+                        ? '#ed6c02' 
+                        : allocation.type === 'Lapse'
+                          ? '#d32f2f'
+                          : '#2e7d32'
                     }}
                   >
-                    <TableCell>{allocation.month}</TableCell>
-                    <TableCell>{allocation.fromSite}</TableCell>
-                    <TableCell>{allocation.toSite}</TableCell>
-                    <TableCell>{allocation.c1}</TableCell>
-                    <TableCell>{allocation.c2}</TableCell>
-                    <TableCell sx={{ color: 'error.main' }}>{allocation.c3}</TableCell>
-                    <TableCell sx={{ color: 'error.main' }}>{allocation.c4}</TableCell>
-                    <TableCell>{allocation.c5}</TableCell>
-                    <TableCell>{allocation.total}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={allocation.isBanking ? 'Banking' : 'Direct'} 
-                        color={allocation.isBanking ? 'warning' : 'success'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{Math.max(0, balance)}</TableCell>
-                  </TableRow>
-                );
-              })}
+                    {allocation.total}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      color: allocation.type === 'Banking' 
+                        ? '#ed6c02' 
+                        : allocation.type === 'Lapse'
+                          ? '#d32f2f'
+                          : '#2e7d32',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {allocation.type}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
-
-        {/* Banking Details (if applicable) */}
-        {summary.totalBanking > 0 && (
-          <Box sx={{ mt: 3, p: 2, bgcolor: 'warning.lighter', borderRadius: 1 }}>
-            <Typography variant="h6" color="warning.dark" gutterBottom>
-              Banking Details
-            </Typography>
-            <Typography variant="body1">
-              Total Power Banked: {summary.totalBanking} Units
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Note: Banking is only available for peak hours (C3, C4) in wind mills
-            </Typography>
-          </Box>
-        )}
-      </Paper>
+      </Box>
     );
   };
 
   return (
-    <Layout>
-      <Box sx={{ mt: 4, mb: 4 }}>
-        {/* Production Table */}
-        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Production Allocation
-          </Typography>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Site Name</TableCell>
-                <TableCell>Month</TableCell>
-                <TableCell>C1 (Units)</TableCell>
-                <TableCell>C2 (Units)</TableCell>
-                <TableCell>C3 (Units)</TableCell>
-                <TableCell>C4 (Units)</TableCell>
-                <TableCell>C5 (Units)</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {productionAllocations.map((allocation) => (
-                <TableRow key={allocation.id}>
-                  <TableCell>{allocation.siteName}</TableCell>
-                  <TableCell>{allocation.month}</TableCell>
-                  <TableCell>{allocation.c1}</TableCell>
-                  <TableCell>{allocation.c2}</TableCell>
-                  <TableCell>{allocation.c3}</TableCell>
-                  <TableCell>{allocation.c4}</TableCell>
-                  <TableCell>{allocation.c5}</TableCell>
-                  <TableCell>{allocation.total}</TableCell>
-                  <TableCell>
-                    <IconButton 
-                      onClick={() => handleEditProduction(allocation)} 
-                      color="primary"
-                      size="small"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton 
-                      onClick={() => handleDeleteProduction(allocation.id)} 
-                      color="error"
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Paper>
+    <Box sx={{ p: 3 }}>
+      <Typography 
+        variant="h4" 
+        sx={{ 
+          mb: 4, 
+          color: '#1a237e',
+          textAlign: 'center',
+          fontWeight: 600,
+          bgcolor: '#e8eaf6',
+          py: 2,
+          borderRadius: 1
+        }}
+      >
+        Allocation Management
+      </Typography>
 
-        {/* Consumption Table */}
-        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Consumption Allocation
-          </Typography>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Site Name</TableCell>
-                <TableCell>Month</TableCell>
-                <TableCell>C1 (Units)</TableCell>
-                <TableCell>C2 (Units)</TableCell>
-                <TableCell>C3 (Units)</TableCell>
-                <TableCell>C4 (Units)</TableCell>
-                <TableCell>C5 (Units)</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {consumptionAllocations.map((allocation) => (
-                <TableRow key={allocation.id}>
-                  <TableCell>{allocation.siteName}</TableCell>
-                  <TableCell>{allocation.month}</TableCell>
-                  <TableCell>{allocation.c1}</TableCell>
-                  <TableCell>{allocation.c2}</TableCell>
-                  <TableCell>{allocation.c3}</TableCell>
-                  <TableCell>{allocation.c4}</TableCell>
-                  <TableCell>{allocation.c5}</TableCell>
-                  <TableCell>{allocation.total}</TableCell>
-                  <TableCell>
-                    <IconButton 
-                      onClick={() => handleEditConsumption(allocation)} 
-                      color="primary"
-                      size="small"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton 
-                      onClick={() => handleDeleteConsumption(allocation.id)} 
-                      color="error"
-                      size="small"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Paper>
+      {renderProductionTable()}
 
-        {/* Auto Allocate Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            onClick={handleAutoAllocate}
-            disabled={!productionAllocations.length || !consumptionAllocations.length}
-            sx={{
-              minWidth: 200,
-              py: 1.5,
-              fontSize: '1.1rem',
-              textTransform: 'none',
-              boxShadow: 2,
-              '&:hover': {
-                boxShadow: 4
-              }
-            }}
-          >
-            Auto Allocate
-          </Button>
-        </Box>
+      {renderConsumptionTable()}
 
-        {/* Allocation Results Table */}
-        {renderAllocationResults()}
-
-        {/* Production Dialog */}
-        <Dialog 
-          open={openProductionDialog} 
-          onClose={() => setOpenProductionDialog(false)}
-          maxWidth="md"
-          fullWidth
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          size="large"
+          startIcon={<AutorenewIcon />}
+          onClick={handleAutoAllocate}
+          sx={{ 
+            backgroundColor: '#1a237e',
+            '&:hover': {
+              backgroundColor: '#0d47a1'
+            },
+            px: 4,
+            py: 1
+          }}
         >
-          <DialogTitle>
-            {editingProduction ? 'Edit Production Data' : 'Add Production Data'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Month"
-                    name="month"
-                    value={newProduction.month}
-                    onChange={(e) => setNewProduction({...newProduction, month: e.target.value})}
-                  />
-                </Grid>
-                {['c1', 'c2', 'c3', 'c4', 'c5'].map((field) => (
-                  <Grid item xs={12} sm={6} key={field}>
-                    <TextField
-                      fullWidth
-                      label={`${field.toUpperCase()} Production (Units)`}
-                      name={field}
-                      type="number"
-                      value={newProduction[field]}
-                      onChange={(e) => setNewProduction({...newProduction, [field]: e.target.value})}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenProductionDialog(false)}>Cancel</Button>
-            <Button onClick={handleProductionSubmit} color="primary" variant="contained">
-              {editingProduction ? 'Update' : 'Add'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Consumption Dialog */}
-        <Dialog 
-          open={openConsumptionDialog} 
-          onClose={() => setOpenConsumptionDialog(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>
-            {editingConsumption ? 'Edit Consumption Data' : 'Add Consumption Data'}
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Month"
-                    name="month"
-                    value={newConsumption.month}
-                    onChange={(e) => setNewConsumption({...newConsumption, month: e.target.value})}
-                  />
-                </Grid>
-                {['c1', 'c2', 'c3', 'c4', 'c5'].map((field) => (
-                  <Grid item xs={12} sm={6} key={field}>
-                    <TextField
-                      fullWidth
-                      label={`${field.toUpperCase()} Consumption (Units)`}
-                      name={field}
-                      type="number"
-                      value={newConsumption[field]}
-                      onChange={(e) => setNewConsumption({...newConsumption, [field]: e.target.value})}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenConsumptionDialog(false)}>Cancel</Button>
-            <Button onClick={handleConsumptionSubmit} color="primary" variant="contained">
-              {editingConsumption ? 'Update' : 'Add'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+          Auto Allocate
+        </Button>
       </Box>
-    </Layout>
+
+      <Typography variant="h6" sx={{ mb: 3, color: '#1a237e' }}>Allocation Results</Typography>
+
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#1a237e', color: 'white' }}>
+            <CardContent>
+              <Typography variant="subtitle1">Total Production</Typography>
+              <Typography variant="h4">{allocationSummary.totalProduction || 0}</Typography>
+              <Typography variant="subtitle2" sx={{ opacity: 0.7 }}>Units</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#2e7d32', color: 'white' }}>
+            <CardContent>
+              <Typography variant="subtitle1">Total Allocated</Typography>
+              <Typography variant="h4">{allocationSummary.totalAllocated || 0}</Typography>
+              <Typography variant="subtitle2" sx={{ opacity: 0.7 }}>Units</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#ed6c02', color: 'white' }}>
+            <CardContent>
+              <Typography variant="subtitle1">Total Banking</Typography>
+              <Typography variant="h4">{allocationSummary.totalBanking || 0}</Typography>
+              <Typography variant="subtitle2" sx={{ opacity: 0.7 }}>Units</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#d32f2f', color: 'white' }}>
+            <CardContent>
+              <Typography variant="subtitle1">Lapse</Typography>
+              <Typography variant="h4">{allocationSummary.lapse || 0}</Typography>
+              <Typography variant="subtitle2" sx={{ opacity: 0.7 }}>Units</Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Typography variant="h6" sx={{ mb: 3, color: '#1a237e' }}>Site Allocation Details</Typography>
+      {renderAllocationDetailsTable()}
+
+      <AllocationEditForm
+        open={editDialogOpen}
+        onClose={handleCloseDialog}
+        site={selectedSite}
+        type={selectedType}
+        updateType={updateType}
+      />
+    </Box>
   );
-};
+}
 
 export default Allocation;

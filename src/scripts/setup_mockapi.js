@@ -718,10 +718,11 @@ function generateMockData(siteId) {
     timestamp: new Date().toISOString(),
     siteId,
     readings: {
-      c1: Math.random() * 100 + 200,  // 200-300
-      c2: Math.random() * 100 + 250,  // 250-350
-      c3: Math.random() * 100 + 225,  // 225-325
-      c4: Math.random() * 100 + 275   // 275-375
+      C1: Math.random() * 100 + 200,  // 200-300
+      C2: Math.random() * 100 + 250,  // 250-350
+      C3: Math.random() * 100 + 225,  // 225-325
+      C4: Math.random() * 100 + 275,  // 275-375
+      C5: Math.random() * 100 + 225   // 225-325
     },
     status: 'active',
     alerts: []

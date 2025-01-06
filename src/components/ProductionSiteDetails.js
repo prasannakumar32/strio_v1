@@ -1,704 +1,502 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useSiteContext } from '../context/SiteContext';
-import Layout from './Layout';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import {
-  Box,
   Container,
-  Typography,
   Grid,
   Paper,
+  Typography,
   Button,
-  Tabs,
-  Tab,
-  IconButton,
+  Box,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  DialogActions
+  IconButton,
+  CircularProgress
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import {
+  LocationOn,
+  Business,
+  Power,
+  Speed,
+  Assignment,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  ErrorOutline,
+  ArrowBack,
+  CheckCircle
+} from '@mui/icons-material';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  BarChart, 
+  Bar, 
+  ResponsiveContainer 
+} from 'recharts';
+import ProductionDataForm from './ProductionDataForm';
 
-const styles = {
-  tableContainer: {
-    mt: 4,
-    '& .MuiTableCell-head': {
-      backgroundColor: '#f5f5f5',
-      fontWeight: 'bold',
-      whiteSpace: 'nowrap'
-    },
-    '& .MuiTableCell-root': {
-      padding: '16px',
-      textAlign: 'center'
-    },
-    '& .MuiTableRow-root:hover': {
-      backgroundColor: '#f8f9fa'
-    }
+const siteData = {
+  'PS1': {
+    id: 'PUDUKOTTAI',
+    name: 'Pudukottai Solar',
+    location: 'Pudukottai',
+    coordinates: '10.3789° N, 78.8243° E',
+    grid: 'TANGEDCO',
+    connectionType: 'HT',
+    status: 'Active',
+    type: 'SOLAR',
+    companyType: 'RENEWABLE',
+    capacity: '1000 MW',
+    totalArea: '500 acres',
+    panelType: 'Monocrystalline',
+    inverterCapacity: '1000 KW',
+    transformerCapacity: '1000 KVA',
+    serviceNumber: '069534460069'
   },
-  actionButtons: {
-    display: 'flex',
-    gap: 1,
-    justifyContent: 'center'
-  },
-  historyPaper: {
-    p: 3,
-    mt: 4,
-    height: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%'
-  },
-  tableWrapper: {
-    flex: 1,
-    overflow: 'auto',
-    minHeight: 300,
-    maxHeight: '500px'
-  },
-  chartPaper: {
-    p: 3,
-    mb: 4
-  },
-  fullWidthSection: {
-    width: '100%',
-    mt: 4
+  'PW1': {
+    id: 'TIRUNELVELI',
+    name: 'Tirunelveli Wind',
+    location: 'Tirunelveli',
+    coordinates: '8.2574° N, 77.6127° E',
+    grid: 'TANGEDCO',
+    connectionType: 'HT',
+    status: 'Active',
+    type: 'WIND',
+    companyType: 'RENEWABLE',
+    capacity: '600 MW',
+    totalArea: '300 acres',
+    turbineType: 'Horizontal Axis',
+    inverterCapacity: '600 KW',
+    transformerCapacity: '600 KVA',
+    serviceNumber: '079204721131'
   }
 };
 
+const mockHistoricalData = {
+  'PS1': [
+    {
+      month: '2025-01',
+      C1: 42000,
+      C2: 0,
+      C3: 0,
+      C4: 118000,
+      C5: 0,
+      total: 160000
+    },
+    {
+      month: '2024-12',
+      C1: 41000,
+      C2: 0,
+      C3: 0,
+      C4: 115000,
+      C5: 0,
+      total: 156000
+    },
+    {
+      month: '2024-11',
+      C1: 40000,
+      C2: 0,
+      C3: 0,
+      C4: 112000,
+      C5: 0,
+      total: 152000
+    }
+  ],
+  'PW1': [
+    {
+      month: '2025-01',
+      C1: 11500,
+      C2: 15500,
+      C3: 0,
+      C4: 46000,
+      C5: 23000,
+      total: 96000
+    },
+    {
+      month: '2024-12',
+      C1: 11000,
+      C2: 15000,
+      C3: 0,
+      C4: 45000,
+      C5: 22000,
+      total: 93000
+    },
+    {
+      month: '2024-11',
+      C1: 10500,
+      C2: 14500,
+      C3: 0,
+      C4: 44000,
+      C5: 21000,
+      total: 90000
+    }
+  ]
+};
+
 const ProductionSiteDetails = () => {
-  const { siteId } = useParams();
-  const { productionSites } = useSiteContext();
-  const [site, setSite] = useState(null);
-  const [activeTab, setActiveTab] = useState('PRODUCTION_METRICS');
-  const [chartType, setChartType] = useState('LINE_CHART');
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [chartType, setChartType] = useState('line');
   const [openForm, setOpenForm] = useState(false);
-  const [productionHistory, setProductionHistory] = useState([
-    { 
-      month: 'Feb', 
-      c1: 800, c2: 500, c3: 100, c4: 0, c5: 0,
-      c001: 100, c002: 200, c003: 300, c004: 400, c005: 500, c006: 600, c007: 700, c008: 800,
-      total: 1400 
-    },
-    { 
-      month: 'Mar', 
-      c1: 600, c2: 400, c3: 100, c4: 0, c5: 0,
-      c001: 150, c002: 250, c003: 350, c004: 450, c005: 550, c006: 650, c007: 750, c008: 850,
-      total: 1100 
-    },
-    { month: 'Apr', c1: 900, c2: 600, c3: 100, c4: 0, c5: 0, total: 1600 },
-    { month: 'May', c1: 700, c2: 500, c3: 100, c4: 0, c5: 0, total: 1300 },
-    { month: 'Jun', c1: 800, c2: 600, c3: 100, c4: 0, c5: 0, total: 1500 },
-    { month: 'Nov', c1: 0, c2: 0, c3: 800, c4: 800, c5: 800, total: 2400 },
-  ]);
-  const [newProduction, setNewProduction] = useState({
-    c1: '', c2: '', c3: '', c4: '', c5: '',
-    c001: '', c002: '', c003: '', c004: '', c005: '', c006: '', c007: '', c008: ''
-  });
-  const [editingRecord, setEditingRecord] = useState(null);
-  const [productionChartData, setProductionChartData] = useState([]);
-  const [chargeMatrixChartData, setChargeMatrixChartData] = useState([]);
+  const [historicalData, setHistoricalData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedData, setSelectedData] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Update the chart data when production history changes
   useEffect(() => {
-    const formatChartData = () => {
-      return productionHistory.map(record => ({
-        month: record.month,
-        // For Production Metrics
-        C1: record.c1,
-        C2: record.c2,
-        C3: record.c3,
-        C4: record.c4,
-        C5: record.c5,
-        // For Charge Metrics
-        C001: record.c001,
-        C002: record.c002,
-        C003: record.c003,
-        C004: record.c004,
-        C005: record.c005,
-        C006: record.c006,
-        C007: record.c007,
-        C008: record.c008
-      }));
-    };
+    if (!id) {
+      setError('Site ID is required');
+      setLoading(false);
+      return;
+    }
 
-    const formattedData = formatChartData();
-    setProductionChartData(formattedData);
-    setChargeMatrixChartData(formattedData);
-  }, [productionHistory]);
+    const site = siteData[id];
+    if (!site) {
+      setError(`Site not found: ${id}`);
+      setLoading(false);
+      return;
+    }
 
-  // Function to render the appropriate chart based on active tab
+    // Load historical data
+    const data = mockHistoricalData[id] || [];
+    setHistoricalData(data);
+    setLoading(false);
+  }, [id]);
+
+  const formatMonthDisplay = (monthStr) => {
+    const date = new Date(monthStr + '-01');
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  };
+
   const renderChart = () => {
-    const chartProps = {
-      width: 700,
-      height: 400,
-      data: activeTab === 'PRODUCTION_METRICS' ? productionChartData : chargeMatrixChartData,
-      margin: { top: 5, right: 30, left: 20, bottom: 5 }
+    if (loading) return <CircularProgress />;
+    if (error) return <Typography color="error">{error}</Typography>;
+    if (!historicalData.length) return <Typography>No historical data available</Typography>;
+
+    const chartHeight = 400;
+    
+    return (
+      <Box sx={{ width: '100%', height: chartHeight, mt: 3 }}>
+        <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+          <Button
+            variant={chartType === 'line' ? 'contained' : 'outlined'}
+            onClick={() => setChartType('line')}
+          >
+            LINE CHART
+          </Button>
+          <Button
+            variant={chartType === 'bar' ? 'contained' : 'outlined'}
+            onClick={() => setChartType('bar')}
+          >
+            BAR CHART
+          </Button>
+        </Box>
+        
+        <ResponsiveContainer>
+          {chartType === 'line' ? (
+            <LineChart data={historicalData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickFormatter={formatMonthDisplay} />
+              <YAxis />
+              <Tooltip 
+                labelFormatter={formatMonthDisplay}
+                formatter={(value) => [`${value.toLocaleString()} KWh`, '']}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="C1" stroke="#8884d8" name="C1" />
+              <Line type="monotone" dataKey="C2" stroke="#82ca9d" name="C2" />
+              <Line type="monotone" dataKey="C3" stroke="#ffc658" name="C3" />
+              <Line type="monotone" dataKey="C4" stroke="#ff7300" name="C4" />
+              <Line type="monotone" dataKey="C5" stroke="#ff0000" name="C5" />
+            </LineChart>
+          ) : (
+            <BarChart data={historicalData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickFormatter={formatMonthDisplay} />
+              <YAxis />
+              <Tooltip 
+                labelFormatter={formatMonthDisplay}
+                formatter={(value) => [`${value.toLocaleString()} KWh`, '']}
+              />
+              <Legend />
+              <Bar dataKey="C1" fill="#8884d8" name="C1" />
+              <Bar dataKey="C2" fill="#82ca9d" name="C2" />
+              <Bar dataKey="C3" fill="#ffc658" name="C3" />
+              <Bar dataKey="C4" fill="#ff7300" name="C4" />
+              <Bar dataKey="C5" fill="#ff0000" name="C5" />
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </Box>
+    );
+  };
+
+  const renderHistoricalTable = () => {
+    if (loading) return <CircularProgress />;
+    if (error) return <Typography color="error">{error}</Typography>;
+    if (!historicalData.length) return <Typography>No historical data available</Typography>;
+
+    return (
+      <TableContainer component={Paper} sx={{ mt: 4 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Month</TableCell>
+              <TableCell align="right">C1</TableCell>
+              <TableCell align="right">C2</TableCell>
+              <TableCell align="right">C3</TableCell>
+              <TableCell align="right">C4</TableCell>
+              <TableCell align="right">C5</TableCell>
+              <TableCell align="right">Total</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {historicalData.map((row) => (
+              <TableRow key={row.month}>
+                <TableCell>{formatMonthDisplay(row.month)}</TableCell>
+                <TableCell align="right">{row.C1.toLocaleString()}</TableCell>
+                <TableCell align="right">{row.C2.toLocaleString()}</TableCell>
+                <TableCell align="right">{row.C3.toLocaleString()}</TableCell>
+                <TableCell align="right">{row.C4.toLocaleString()}</TableCell>
+                <TableCell align="right">{row.C5.toLocaleString()}</TableCell>
+                <TableCell align="right">{row.total.toLocaleString()}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
+
+  const handleEdit = (data) => {
+    setSelectedData(data);
+    setOpenForm(true);
+  };
+
+  const handleSubmit = (formData) => {
+    const newEntry = {
+      month: formData.month,
+      C1: Math.round(parseFloat(formData.C1)),
+      C2: Math.round(parseFloat(formData.C2)),
+      C3: Math.round(parseFloat(formData.C3)),
+      C4: Math.round(parseFloat(formData.C4)),
+      C5: Math.round(parseFloat(formData.C5)),
+      total: Math.round(parseFloat(formData.total))
     };
 
-    const commonComponents = (
-      <>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-      </>
+    // Update mock data
+    const updatedMockData = [...mockHistoricalData[id]];
+    const index = updatedMockData.findIndex(
+      item => item.month === formData.month
     );
 
-    if (activeTab === 'PRODUCTION_METRICS') {
-      if (chartType === 'LINE_CHART') {
-        return (
-          <LineChart {...chartProps}>
-            {commonComponents}
-            <Line type="monotone" dataKey="C1" stroke="#8884d8" />
-            <Line type="monotone" dataKey="C2" stroke="#82ca9d" />
-            <Line type="monotone" dataKey="C3" stroke="#ffc658" />
-            <Line type="monotone" dataKey="C4" stroke="#ff7300" />
-            <Line type="monotone" dataKey="C5" stroke="#ff0000" />
-          </LineChart>
-        );
-      } else {
-        return (
-          <BarChart {...chartProps}>
-            {commonComponents}
-            <Bar dataKey="C1" fill="#8884d8" />
-            <Bar dataKey="C2" fill="#82ca9d" />
-            <Bar dataKey="C3" fill="#ffc658" />
-            <Bar dataKey="C4" fill="#ff7300" />
-            <Bar dataKey="C5" fill="#ff0000" />
-          </BarChart>
-        );
-      }
+    if (index !== -1) {
+      updatedMockData[index] = {
+        ...updatedMockData[index],
+        C1: newEntry.C1,
+        C2: newEntry.C2,
+        C3: newEntry.C3,
+        C4: newEntry.C4,
+        C5: newEntry.C5,
+        total: newEntry.total
+      };
     } else {
-      if (chartType === 'LINE_CHART') {
-        return (
-          <LineChart {...chartProps}>
-            {commonComponents}
-            <Line type="monotone" dataKey="C001" stroke="#8884d8" />
-            <Line type="monotone" dataKey="C002" stroke="#82ca9d" />
-            <Line type="monotone" dataKey="C003" stroke="#ffc658" />
-            <Line type="monotone" dataKey="C004" stroke="#ff7300" />
-            <Line type="monotone" dataKey="C005" stroke="#ff0000" />
-            <Line type="monotone" dataKey="C006" stroke="#0088FE" />
-            <Line type="monotone" dataKey="C007" stroke="#00C49F" />
-            <Line type="monotone" dataKey="C008" stroke="#FFBB28" />
-          </LineChart>
-        );
-      } else {
-        return (
-          <BarChart {...chartProps}>
-            {commonComponents}
-            <Bar dataKey="C001" fill="#8884d8" />
-            <Bar dataKey="C002" fill="#82ca9d" />
-            <Bar dataKey="C003" fill="#ffc658" />
-            <Bar dataKey="C004" fill="#ff7300" />
-            <Bar dataKey="C005" fill="#ff0000" />
-            <Bar dataKey="C006" fill="#0088FE" />
-            <Bar dataKey="C007" fill="#00C49F" />
-            <Bar dataKey="C008" fill="#FFBB28" />
-          </BarChart>
-        );
-      }
+      updatedMockData.push({
+        month: formData.month,
+        C1: newEntry.C1,
+        C2: newEntry.C2,
+        C3: newEntry.C3,
+        C4: newEntry.C4,
+        C5: newEntry.C5,
+        total: newEntry.total
+      });
     }
-  };
 
-  useEffect(() => {
-    const loadSiteDetails = () => {
-      const foundSite = productionSites?.find(s => s.id === siteId);
-      if (foundSite) {
-        setSite(foundSite);
-        localStorage.setItem('productionSites', JSON.stringify(productionSites));
-      } else {
-        // Try loading from localStorage
-        const storedSites = JSON.parse(localStorage.getItem('productionSites') || '[]');
-        const storedSite = storedSites.find(s => s.id === siteId);
-        if (storedSite) {
-          setSite(storedSite);
-        }
-      }
-    };
+    // Update state
+    setHistoricalData(updatedMockData);
 
-    loadSiteDetails();
-  }, [siteId, productionSites]);
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const handleChartTypeChange = (type) => {
-    setChartType(type);
-  };
-
-  const handleOpenForm = () => {
-    setOpenForm(true);
-  };
-
-  const handleCloseForm = () => {
+    setSelectedData(null);
     setOpenForm(false);
-    setEditingRecord(null);
-    setNewProduction({
-      c1: '', c2: '', c3: '', c4: '', c5: '',
-      c001: '', c002: '', c003: '', c004: '', c005: '', c006: '', c007: '', c008: ''
-    });
   };
 
-  const handleProductionInputChange = (event) => {
-    const { name, value } = event.target;
-    setNewProduction(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleEdit = (record) => {
-    setEditingRecord(record);
-    setNewProduction({
-      c1: record.c1 || '',
-      c2: record.c2 || '',
-      c3: record.c3 || '',
-      c4: record.c4 || '',
-      c5: record.c5 || '',
-      c001: record.c001 || '',
-      c002: record.c002 || '',
-      c003: record.c003 || '',
-      c004: record.c004 || '',
-      c005: record.c005 || '',
-      c006: record.c006 || '',
-      c007: record.c007 || '',
-      c008: record.c008 || ''
-    });
-    setOpenForm(true);
-  };
-
-  const handleDelete = (recordToDelete) => {
+  const handleDelete = (month) => {
     if (window.confirm('Are you sure you want to delete this record?')) {
-      setProductionHistory(prev => 
-        prev.filter(record => record.month !== recordToDelete.month)
+      // Remove from mock data
+      const updatedMockData = mockHistoricalData[id].filter(
+        item => item.month !== month
       );
-      
-      // Update localStorage
-      const key = `production_history_${siteId}`;
-      const updatedHistory = productionHistory.filter(
-        record => record.month !== recordToDelete.month
-      );
-      localStorage.setItem(key, JSON.stringify(updatedHistory));
-    }
-  };
 
-  const handleSubmitProduction = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const total = Object.values(newProduction)
-      .filter(val => !isNaN(Number(val)))
-      .reduce((sum, val) => sum + Number(val || 0), 0);
-
-    // Update production history
-    const newRecord = {
-      month: new Date().toLocaleString('default', { month: 'short' }),
-      ...newProduction,
-      total
-    };
-
-    let updatedHistory;
-    if (editingRecord) {
-      updatedHistory = productionHistory.map(record =>
-        record.month === editingRecord.month ? newRecord : record
-      );
-    } else {
-      updatedHistory = [newRecord, ...productionHistory];
-    }
-
-    setProductionHistory(updatedHistory);
-    localStorage.setItem(`production_history_${siteId}`, JSON.stringify(updatedHistory));
-
-    // Also update allocation data
-    const allocationEntry = {
-      id: Date.now().toString(),
-      userId: user.id,
-      siteId: siteId,
-      siteName: site?.name,
-      date: new Date().toISOString(),
-      month: newRecord.month,
-      c1: newProduction.c1 || 0,
-      c2: newProduction.c2 || 0,
-      c3: newProduction.c3 || 0,
-      c4: newProduction.c4 || 0,
-      c5: newProduction.c5 || 0,
-      total: total
-    };
-
-    // Get existing allocations
-    const existingAllocations = JSON.parse(localStorage.getItem(`productionAllocations_${user.id}`) || '[]');
-    const updatedAllocations = [...existingAllocations, allocationEntry];
-    localStorage.setItem(`productionAllocations_${user.id}`, JSON.stringify(updatedAllocations));
-
-    handleCloseForm();
-  };
-
-  // Render different tables based on active tab
-  const renderTable = () => {
-    if (activeTab === 'PRODUCTION_METRICS') {
-      return (
-        <TableContainer sx={styles.tableWrapper}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>Month</TableCell>
-                <TableCell>C1 (Units)</TableCell>
-                <TableCell>C2 (Units)</TableCell>
-                <TableCell>C3 (Units)</TableCell>
-                <TableCell>C4 (Units)</TableCell>
-                <TableCell>C5 (Units)</TableCell>
-                <TableCell>Total (Units)</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {productionHistory.map((record) => (
-                <TableRow key={record.month} hover>
-                  <TableCell>{record.month}</TableCell>
-                  <TableCell>{record.c1}</TableCell>
-                  <TableCell>{record.c2}</TableCell>
-                  <TableCell>{record.c3}</TableCell>
-                  <TableCell>{record.c4}</TableCell>
-                  <TableCell>{record.c5}</TableCell>
-                  <TableCell>{record.total}</TableCell>
-                  <TableCell>
-                    <Box sx={styles.actionButtons}>
-                      <IconButton 
-                        size="small" 
-                        color="primary"
-                        onClick={() => handleEdit(record)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="error"
-                        onClick={() => handleDelete(record)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      );
-    } else {
-      return (
-        <TableContainer sx={styles.tableWrapper}>
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell>Month</TableCell>
-                <TableCell>C001</TableCell>
-                <TableCell>C002</TableCell>
-                <TableCell>C003</TableCell>
-                <TableCell>C004</TableCell>
-                <TableCell>C005</TableCell>
-                <TableCell>C006</TableCell>
-                <TableCell>C007</TableCell>
-                <TableCell>C008</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {productionHistory.map((record) => (
-                <TableRow key={record.month} hover>
-                  <TableCell>{record.month}</TableCell>
-                  <TableCell>{record.c001}</TableCell>
-                  <TableCell>{record.c002}</TableCell>
-                  <TableCell>{record.c003}</TableCell>
-                  <TableCell>{record.c004}</TableCell>
-                  <TableCell>{record.c005}</TableCell>
-                  <TableCell>{record.c006}</TableCell>
-                  <TableCell>{record.c007}</TableCell>
-                  <TableCell>{record.c008}</TableCell>
-                  <TableCell>
-                    <Box sx={styles.actionButtons}>
-                      <IconButton 
-                        size="small" 
-                        color="primary"
-                        onClick={() => handleEdit(record)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="error"
-                        onClick={() => handleDelete(record)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      );
-    }
-  };
-
-  // Update the renderFormFields function
-  const renderFormFields = () => {
-    if (activeTab === 'PRODUCTION_METRICS') {
-      return (
-        <>
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom>
-              Production Units
-            </Typography>
-          </Grid>
-          {Array.from({ length: 5 }, (_, i) => {
-            const fieldName = `c${i + 1}`;
-            return (
-              <Grid item xs={12} sm={6} key={fieldName}>
-                <TextField
-                  fullWidth
-                  label={`C${i + 1} Production (Units)`}
-                  name={fieldName}
-                  value={newProduction[fieldName]}
-                  onChange={handleProductionInputChange}
-                  type="number"
-                  InputProps={{
-                    inputProps: { min: 0 }
-                  }}
-                />
-              </Grid>
-            );
-          })}
-        </>
-      );
-    } else {
-      return (
-        <>
-          <Grid item xs={12}>
-            <Typography variant="subtitle1" gutterBottom>
-              Charge Matrix Units
-            </Typography>
-          </Grid>
-          {Array.from({ length: 8 }, (_, i) => {
-            const fieldName = `c00${i + 1}`;
-            return (
-              <Grid item xs={12} sm={6} key={fieldName}>
-                <TextField
-                  fullWidth
-                  label={`C00${i + 1} Charge Matrix`}
-                  name={fieldName}
-                  value={newProduction[fieldName]}
-                  onChange={handleProductionInputChange}
-                  type="number"
-                  InputProps={{
-                    inputProps: { min: 0 }
-                  }}
-                />
-              </Grid>
-            );
-          })}
-        </>
-      );
+      // Update state
+      setHistoricalData(updatedMockData);
     }
   };
 
   return (
-    <Layout>
-      <Container maxWidth="lg">
-        <Box mt={3}>
-          {/* Back Button and Title */}
-          <Box display="flex" alignItems="center" mb={4}>
-            <Link to="/production" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <IconButton color="primary" sx={{ mr: 2 }}>
-                <ArrowBackIcon />
-              </IconButton>
-            </Link>
-            <Typography variant="h4" component="h1">
-              {site?.name} - Production Details
+    <Container maxWidth="xl">
+      {/* Back Button */}
+      <Box sx={{ mb: 3, mt: 2 }}>
+        <Button
+          variant="text"
+          color="primary"
+          onClick={() => navigate('/production')}
+          startIcon={<ArrowBack />}
+          sx={{ 
+            color: '#1a237e',
+            '&:hover': {
+              backgroundColor: 'rgba(26, 35, 126, 0.04)'
+            }
+          }}
+        >
+          BACK TO PRODUCTION SITES
+        </Button>
+      </Box>
+
+      {/* Site Name Header */}
+      <Typography 
+        variant="h5" 
+        component="h1" 
+        sx={{ 
+          mb: 3,
+          fontWeight: 500,
+          color: '#1a237e'
+        }}
+      >
+        {siteData[id].name}
+      </Typography>
+
+      <Grid container spacing={3}>
+        {/* Left Column - Site Information */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Typography 
+              variant="h6" 
+              component="h2" 
+              sx={{ 
+                mb: 3,
+                color: '#1a237e',
+                fontWeight: 500
+              }}
+            >
+              Site Information
             </Typography>
-          </Box>
 
-          <Grid container spacing={4}>
-            {/* Left Side - Site Information */}
-            <Grid item xs={12} md={4}>
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Site Information
-                </Typography>
-                <Box sx={{ '& > div': { mb: 2 } }}>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Site
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.name}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Location
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.location}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Capacity
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.capacity} units
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Grid
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.grid}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Status
-                    </Typography>
-                    <Typography variant="body1" color={site?.status === 'active' ? 'success.main' : 'error.main'}>
-                      {site?.status}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Banking
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.banking ? 'Yes' : 'No'}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Service Number/REC
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.serviceNumber}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Company Name
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.companyName}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
+            <List>
+              {/* Location */}
+              <ListItem>
+                <ListItemIcon>
+                  <LocationOn color="primary" sx={{ mt: 0.5 }} />
+                </ListItemIcon>
+                <ListItemText primary={siteData[id].location} secondary={siteData[id].coordinates} />
+              </ListItem>
 
-            {/* Right Side - Charts */}
-            <Grid item xs={12} md={8}>
-              <Paper elevation={3} sx={styles.chartPaper}>
-                {/* Metrics Tabs */}
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                  <Tabs value={activeTab} onChange={handleTabChange}>
-                    <Tab label="Production Metrics" value="PRODUCTION_METRICS" />
-                    <Tab label="Charges Metrics" value="CHARGES_METRICS" />
-                  </Tabs>
-                </Box>
+              {/* Grid & Connection */}
+              <ListItem>
+                <ListItemIcon>
+                  <Power color="primary" sx={{ mt: 0.5 }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Grid & Connection" 
+                  secondary={
+                    <Box>
+                      <Typography variant="body2">Grid: {siteData[id].grid}</Typography>
+                      <Typography variant="body2">Connection Type: {siteData[id].connectionType}</Typography>
+                    </Box>
+                  } 
+                />
+              </ListItem>
 
-                {/* Chart Type Buttons */}
-                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Button
-                      variant={chartType === 'LINE_CHART' ? 'contained' : 'outlined'}
-                      onClick={() => handleChartTypeChange('LINE_CHART')}
-                      sx={{ mr: 2 }}
-                    >
-                      Line Chart
-                    </Button>
-                    <Button
-                      variant={chartType === 'BAR_CHART' ? 'contained' : 'outlined'}
-                      onClick={() => handleChartTypeChange('BAR_CHART')}
-                    >
-                      Bar Chart
-                    </Button>
-                  </Box>
-                  <Button 
-                    variant="contained" 
-                    color="primary"
-                    onClick={handleOpenForm}
-                    startIcon={<AddIcon />}
-                  >
-                    Enter New Data
-                  </Button>
-                </Box>
+              {/* Status & Type */}
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="primary" sx={{ mt: 0.5 }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Status & Type" 
+                  secondary={
+                    <Box>
+                      <Typography variant="body2">Status: {siteData[id].status}</Typography>
+                      <Typography variant="body2">Type: {siteData[id].type}</Typography>
+                      <Typography variant="body2">Company Type: {siteData[id].companyType}</Typography>
+                    </Box>
+                  } 
+                />
+              </ListItem>
 
-                {/* Chart */}
-                <Box sx={{ width: '100%', height: 400, overflowX: 'auto' }}>
-                  {renderChart()}
-                </Box>
-              </Paper>
-            </Grid>
+              {/* Capacity & Area */}
+              <ListItem>
+                <ListItemIcon>
+                  <Speed color="primary" sx={{ mt: 0.5 }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Capacity & Area" 
+                  secondary={
+                    <Box>
+                      <Typography variant="body2">Capacity: {siteData[id].capacity}</Typography>
+                      <Typography variant="body2">Total Area: {siteData[id].totalArea}</Typography>
+                      {siteData[id].type === 'SOLAR' ? (
+                        <Typography variant="body2">Panel Type: {siteData[id].panelType}</Typography>
+                      ) : siteData[id].type === 'WIND' ? (
+                        <Typography variant="body2">Turbine Type: {siteData[id].turbineType}</Typography>
+                      ) : (
+                        <></>
+                      )}
+                    </Box>
+                  } 
+                />
+              </ListItem>
 
-            {/* Full Width Production History */}
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={styles.historyPaper}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                  <Typography variant="h6" fontWeight="medium">
-                    {activeTab === 'PRODUCTION_METRICS' ? 'Production History' : 'Charge Matrices'}
-                  </Typography>
-                </Box>
-                {renderTable()}
-              </Paper>
-            </Grid>
-          </Grid>
+              {/* Service Information */}
+              <ListItem>
+                <ListItemIcon>
+                  <Assignment color="primary" sx={{ mt: 0.5 }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Service Information" 
+                  secondary={
+                    <Box>
+                      <Typography variant="body2">Service Number: {siteData[id].serviceNumber}</Typography>
+                      <Typography variant="body2">Commission Date: {siteData[id].commissionDate || '-'}</Typography>
+                      <Typography variant="body2">Last Inspection: {siteData[id].lastInspection || '-'}</Typography>
+                      <Typography variant="body2">Maintenance: {siteData[id].maintenance || '-'}</Typography>
+                    </Box>
+                  } 
+                />
+              </ListItem>
+            </List>
+          </Paper>
+        </Grid>
 
-          {/* Dialog */}
-          <Dialog 
-            open={openForm} 
-            onClose={handleCloseForm} 
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle>
-              {editingRecord 
-                ? `Edit ${activeTab === 'PRODUCTION_METRICS' ? 'Production' : 'Charge Matrix'} Data` 
-                : `Enter New ${activeTab === 'PRODUCTION_METRICS' ? 'Production' : 'Charge Matrix'} Data`
-              }
-            </DialogTitle>
-            <DialogContent>
-              <Box sx={{ p: 1 }}>
-                <Grid container spacing={3}>
-                  {renderFormFields()}
-                </Grid>
-              </Box>
-            </DialogContent>
-            <DialogActions sx={{ p: 2, pt: 0 }}>
-              <Button onClick={handleCloseForm}>Cancel</Button>
-              <Button 
-                onClick={handleSubmitProduction} 
-                variant="contained" 
-                color="primary"
-              >
-                {editingRecord ? 'Update' : 'Submit'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      </Container>
-    </Layout>
+        {/* Right Column - Chart and Data */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 3 }}>
+            {renderChart()}
+            {renderHistoricalTable()}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      <ProductionDataForm
+        open={openForm}
+        onClose={() => {
+          setOpenForm(false);
+          setSelectedData(null);
+        }}
+        onSubmit={handleSubmit}
+        initialData={selectedData}
+      />
+    </Container>
   );
 };
 
-export default ProductionSiteDetails; 
+export default ProductionSiteDetails;

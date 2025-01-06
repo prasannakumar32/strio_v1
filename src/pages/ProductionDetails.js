@@ -49,8 +49,8 @@ import {
   MOCK_SITE_DETAILS, 
   MOCK_HISTORICAL_DATA,
   deleteProductionData,
-  updateProductionData 
-} from '../services/productionApi';
+  productionService 
+} from '../services/productionService';
 import ProductionDataForm from '../components/forms/ProductionDataForm';
 
 const ProductionDetails = () => {
@@ -64,12 +64,20 @@ const ProductionDetails = () => {
   const [selectedData, setSelectedData] = useState(null);
 
   useEffect(() => {
+    // Initialize historical data if not present
+    const historicalData = localStorage.getItem('historicalProductionData');
+    if (!historicalData) {
+      productionService.initializeHistoricalData();
+    }
+    
     // Get site details
     const site = MOCK_SITE_DETAILS[siteId];
     setSiteDetails(site);
 
     // Get historical data
-    const data = MOCK_HISTORICAL_DATA[siteId] || [];
+    const data = JSON.parse(localStorage.getItem('historicalProductionData') || '[]')
+      .filter(item => item.site_id === siteId)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     setHistoricalData(data);
   }, [siteId]);
 
@@ -100,7 +108,7 @@ const ProductionDetails = () => {
 
   const handleFormSubmit = async (formData) => {
     try {
-      await updateProductionData(siteId, formData.month, formData.year, formData);
+      await productionService.updateProductionData(siteId, formData.month, formData.year, formData);
       // Refresh data after update
       const newData = selectedData
         ? historicalData.map(item => 

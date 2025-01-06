@@ -1,188 +1,109 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Container,
   Typography,
+  Paper,
   Grid,
-  Card,
-  CardContent,
-  Chip,
-  CircularProgress,
-  Alert,
-  IconButton
+  Button,
+  IconButton,
 } from '@mui/material';
-import { useSiteContext } from '../context/SiteContext';
-import api from '../services/api';
-import Layout from './Layout';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  LocationOn as LocationIcon,
+  Business as BusinessIcon,
+  Speed as ConsumptionIcon,
+  PowerOutlined as PowerIcon,
+  ArrowForward as ArrowForwardIcon
+} from '@mui/icons-material';
+import { CONSUMPTION_SITES } from '../data/sites';
 
-const Consumption = () => {
+function Consumption() {
   const navigate = useNavigate();
-  const { consumptionSites } = useSiteContext();
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [sites, setSites] = useState([]);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
-
-    if (!token || !user) {
-      navigate('/login');
-      return;
-    }
-
-    const fetchConsumptionSites = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Get sites from API or localStorage
-        const storedSites = JSON.parse(localStorage.getItem('consumptionSites') || '[]');
-        
-        // Add unique IDs if they don't exist
-        const sitesWithIds = storedSites.map(site => ({
-          ...site,
-          id: site.id || `cons_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        }));
-
-        setSites(sitesWithIds);
-        localStorage.setItem('consumptionSites', JSON.stringify(sitesWithIds));
-
-      } catch (err) {
-        console.error('Error loading consumption sites:', err);
-        setError('Error loading consumption sites. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchConsumptionSites();
-  }, [navigate]);
 
   const handleSiteClick = (siteId) => {
-    if (!siteId) {
-      console.error('Invalid site ID');
-      return;
-    }
     navigate(`/consumption/view/${siteId}`);
   };
 
-  const handleDelete = (siteId) => {
-    if (!siteId) {
-      console.error('Invalid site ID');
-      return;
-    }
-
-    try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!user) {
-        console.error('No user found');
-        return;
-      }
-
-      const updatedSites = sites.filter(site => site.id !== siteId);
-      setSites(updatedSites);
-      localStorage.setItem('consumptionSites', JSON.stringify(updatedSites));
-
-    } catch (error) {
-      console.error('Error deleting site:', error);
-      setError('Failed to delete site. Please try again.');
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
-
-  if (error) {
-    return (
-      <Layout>
-        <Box m={2}>
-          <Alert severity="error">{error}</Alert>
-        </Box>
-      </Layout>
-    );
-  }
-
   return (
-    <Layout>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h4" component="h1">
-              Consumption Sites
-            </Typography>
-          </Grid>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h5" sx={{ mb: 3, color: '#1a237e', fontWeight: 500 }}>
+        Consumption Sites
+      </Typography>
 
-          {sites.map((site) => (
-            <Grid item xs={12} sm={6} md={4} key={site.id || `temp_${Date.now()}`}>
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" component="h2" gutterBottom>
-                    {site.name}
-                  </Typography>
-                  <Typography color="textSecondary" gutterBottom>
-                    Location: {site.location}
-                  </Typography>
-                  <Typography color="textSecondary" gutterBottom>
-                    Type: {site.type}
-                  </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                    <Chip
-                      label={site.status === 'active' ? 'Active' : 'Inactive'}
-                      color={site.status === 'active' ? 'success' : 'error'}
-                      size="small"
-                    />
-                    <Box>
-                      <IconButton 
-                        size="small" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSiteClick(site.id);
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="error"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm('Are you sure you want to delete this site?')) {
-                            handleDelete(site.id);
-                          }
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
+      <Grid container spacing={3}>
+        {CONSUMPTION_SITES.map((site) => (
+          <Grid item xs={12} sm={6} md={4} key={site.id}>
+            <Paper 
+              sx={{ 
+                p: 3, 
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                }
+              }}
+              onClick={() => handleSiteClick(site.id)}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Typography variant="h6" sx={{ color: '#1a237e', fontWeight: 500 }}>
+                  {site.name}
+                </Typography>
+                <IconButton 
+                  size="small" 
+                  sx={{ color: '#1a237e' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSiteClick(site.id);
+                  }}
+                >
+                  <ArrowForwardIcon />
+                </IconButton>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <LocationIcon sx={{ mr: 1, color: '#666' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {site.location}
+                    </Typography>
                   </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-    </Layout>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <BusinessIcon sx={{ mr: 1, color: '#666' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {site.type}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <ConsumptionIcon sx={{ mr: 1, color: '#666' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {site.capacity}
+                    </Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <PowerIcon sx={{ mr: 1, color: '#666' }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {site.serviceNumber}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
   );
-};
+}
 
 export default Consumption;

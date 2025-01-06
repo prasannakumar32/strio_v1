@@ -1,576 +1,519 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useSiteContext } from '../context/SiteContext';
-import Layout from './Layout';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box,
   Container,
-  Typography,
   Grid,
   Paper,
+  Typography,
   Button,
-  Tabs,
-  Tab,
-  IconButton,
+  Box,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  DialogActions
+  IconButton,
+  CircularProgress
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
+import {
+  LocationOn,
+  Business,
+  Power,
+  Speed,
+  Assignment,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  ErrorOutline,
+  ArrowBack,
+  CheckCircle
+} from '@mui/icons-material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, ResponsiveContainer } from 'recharts';
+import ProductionDataForm from './ProductionDataForm';
+import mockData from '../testData/mockapi_production.json';
 
-const styles = {
-  // ... same styles as ProductionSiteDetails
+const siteData = {
+  'CS1': {
+    id: 'CS1',
+    name: 'POLYSPIN EXPORTS LTD.,EXPANSION UNIT.',
+    location: 'VIRUDUNAGAR',
+    coordinates: '9.4533° N, 77.5262° E',
+    grid: 'TANGEDCO',
+    connectionType: 'HT',
+    status: 'Active',
+    type: 'CONSUMPTION',
+    companyType: 'TEXTILE',
+    capacity: '2000 KW',
+    totalArea: '20000 sq.ft',
+    serviceNumber: '079094620335'
+  },
+  'CS2': {
+    id: 'CS2',
+    name: 'PEL TEXTILES',
+    location: 'VIRUDUNAGAR',
+    coordinates: '9.4533° N, 77.5577° E',
+    grid: 'TANGEDCO',
+    connectionType: 'HT',
+    status: 'Active',
+    type: 'CONSUMPTION',
+    companyType: 'TEXTILE',
+    capacity: '1500 KW',
+    totalArea: '15000 sq.ft',
+    serviceNumber: '079094620348'
+  },
+  'CS3': {
+    id: 'CS3',
+    name: 'M/s Ramar and Sons',
+    location: 'VIRUDUNAGAR',
+    coordinates: '9.4533° N, 77.5577° E',
+    grid: 'TANGEDCO',
+    connectionType: 'HT',
+    status: 'Active',
+    type: 'CONSUMPTION',
+    companyType: 'TEXTILE',
+    capacity: '1800 KW',
+    totalArea: '18000 sq.ft',
+    serviceNumber: '079094620349'
+  }
 };
-
-// Add this sample site data
-const SAMPLE_SITE_INFO = {
-  name: "Chennai Industrial Park",
-  location: "Chennai, Tamil Nadu",
-  type: "INDUSTRIAL",
-  capacity: "10000",
-  grid: "Tamil Nadu Grid",
-  status: "active",
-  banking: "Yes",
-  serviceNumber: "TN45678/IND",
-  companyName: "M/s Chennai Manufacturing Ltd"
-};
-
-// Add sample historical data
-const SAMPLE_HISTORY_DATA = [
-  { month: 'Feb', c1: 800, c2: 500, c3: 100, c4: 0, c5: 0, total: 1400 },
-  { month: 'Mar', c1: 600, c2: 400, c3: 100, c4: 0, c5: 0, total: 1100 },
-  { month: 'Apr', c1: 900, c2: 600, c3: 100, c4: 0, c5: 0, total: 1600 },
-  { month: 'May', c1: 700, c2: 500, c3: 100, c4: 0, c5: 0, total: 1300 },
-  { month: 'Jun', c1: 800, c2: 600, c3: 100, c4: 0, c5: 0, total: 1500 },
-  { month: 'Nov', c1: 0, c2: 0, c3: 800, c4: 800, c5: 800, total: 2400 }
-];
 
 const ConsumptionSiteDetails = () => {
-  const { siteId } = useParams();
-  const { consumptionSites } = useSiteContext();
-  const [site, setSite] = useState(null);
-  const [chartType, setChartType] = useState('LINE_CHART');
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [chartType, setChartType] = useState('line');
   const [openForm, setOpenForm] = useState(false);
-  const [consumptionHistory, setConsumptionHistory] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [editingRecord, setEditingRecord] = useState(null);
-  const [newData, setNewData] = useState({
-    c1: '',
-    c2: '',
-    c3: '',
-    c4: '',
-    c5: ''
-  });
+  const [historicalData, setHistoricalData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedData, setSelectedData] = useState(null);
+  const [error, setError] = useState(null);
+  
+  const site = siteData[id];
 
   useEffect(() => {
-    const loadSiteDetails = async () => {
+    const loadSiteData = async () => {
+      if (!id) {
+        setError('Site ID is required');
+        setLoading(false);
+        return;
+      }
+
+      if (!site) {
+        setError(`Consumption site not found. Site ID: ${id}`);
+        setLoading(false);
+        return;
+      }
+
+      // Validate site type
+      if (site.type !== 'CONSUMPTION') {
+        navigate(`/production/${id}`, { replace: true });
+        return;
+      }
+
       try {
-        // First try to get site from context
-        const contextSite = consumptionSites?.find(s => s.id === siteId);
-        if (contextSite) {
-          setSite(contextSite);
-          localStorage.setItem('consumptionSites', JSON.stringify(consumptionSites));
-        } else {
-          // If not in context, use sample data
-          const sampleSite = SAMPLE_SITES.find(s => s.id === siteId) || SAMPLE_SITE_INFO;
-          setSite(sampleSite);
+        setLoading(true);
+        
+        // Get current date and calculate last 3 months
+        const currentDate = new Date('2025-01-06T14:23:59+05:30');
+        const months = [];
+        for (let i = 0; i < 3; i++) {
+          const date = new Date(currentDate);
+          date.setMonth(currentDate.getMonth() - i);
+          months.unshift(date.toISOString().slice(0, 7)); // Format: YYYY-MM
         }
 
-        // Load from local storage as backup
-        const storedSites = JSON.parse(localStorage.getItem('consumptionSites') || '[]');
-        const storedSite = storedSites.find(s => s.id === siteId);
-        if (storedSite && !contextSite) {
-          setSite(storedSite);
-        }
+        // Create data for last 3 months
+        const defaultData = months.map((month, index) => {
+          // Base values that increase each month
+          const baseValues = {
+            C1: 236 + (index * 15),
+            C2: 286 + (index * 15),
+            C3: 258 + (index * 17),
+            C4: 309 + (index * 17),
+            C5: 265 + (index * 15)
+          };
 
-        // Load consumption history
-        const key = `consumption_history_${siteId}`;
-        const storedHistory = JSON.parse(localStorage.getItem(key) || 'null');
-        if (!storedHistory) {
-          setConsumptionHistory(SAMPLE_HISTORY_DATA);
-          localStorage.setItem(key, JSON.stringify(SAMPLE_HISTORY_DATA));
-        } else {
-          setConsumptionHistory(storedHistory);
-        }
+          return {
+            month_year: month,
+            ...baseValues,
+            site_id: id
+          };
+        });
 
-        // Format data for chart
-        const formattedData = storedHistory.map(record => ({
-          month: record.month,
-          Consumption: record.consumption,
-          'Peak Demand': record.peakDemand,
-          'Off Peak': record.offPeak,
-          Renewable: record.renewable,
-          Grid: record.grid
+        // Sort by date (oldest to newest)
+        const formattedData = defaultData.map(item => ({
+          month: item.month_year,
+          c1: Math.round(item.C1),
+          c2: Math.round(item.C2),
+          c3: Math.round(item.C3),
+          c4: Math.round(item.C4),
+          c5: Math.round(item.C5)
         }));
-        setChartData(formattedData);
 
+        // Simulate loading delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setHistoricalData(formattedData);
+        setError(null);
       } catch (err) {
-        console.error('Error loading site data:', err);
+        setError(`Error loading site data: ${err.message}`);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadSiteDetails();
-  }, [siteId, consumptionSites]);
+    loadSiteData();
+  }, [id, site, navigate]);
 
-  const handleChartTypeChange = (type) => {
-    setChartType(type);
-  };
-
-  const renderChart = () => {
-    const chartProps = {
-      width: 700,
-      height: 400,
-      data: chartData,
-      margin: { top: 5, right: 30, left: 20, bottom: 5 }
-    };
-
-    const commonComponents = (
-      <>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-      </>
+  if (loading) {
+    return (
+      <Box 
+        display="flex" 
+        flexDirection="column"
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="60vh"
+        gap={2}
+      >
+        <CircularProgress size={40} />
+        <Typography variant="h6" color="textSecondary">
+          Loading consumption site data...
+        </Typography>
+      </Box>
     );
+  }
 
-    if (chartType === 'LINE_CHART') {
-      return (
-        <LineChart {...chartProps}>
-          {commonComponents}
-          <Line type="monotone" dataKey="Consumption" stroke="#8884d8" />
-          <Line type="monotone" dataKey="Peak Demand" stroke="#82ca9d" />
-          <Line type="monotone" dataKey="Off Peak" stroke="#ffc658" />
-          <Line type="monotone" dataKey="Renewable" stroke="#ff7300" />
-          <Line type="monotone" dataKey="Grid" stroke="#ff0000" />
-        </LineChart>
-      );
-    } else {
-      return (
-        <BarChart {...chartProps}>
-          {commonComponents}
-          <Bar dataKey="Consumption" fill="#8884d8" />
-          <Bar dataKey="Peak Demand" fill="#82ca9d" />
-          <Bar dataKey="Off Peak" fill="#ffc658" />
-          <Bar dataKey="Renewable" fill="#ff7300" />
-          <Bar dataKey="Grid" fill="#ff0000" />
-        </BarChart>
-      );
-    }
-  };
+  if (error) {
+    return (
+      <Box 
+        display="flex" 
+        flexDirection="column" 
+        alignItems="center" 
+        justifyContent="center" 
+        minHeight="60vh"
+        gap={2}
+      >
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 3, 
+            textAlign: 'center', 
+            backgroundColor: '#fff3f3',
+            maxWidth: 400
+          }}
+        >
+          <ErrorOutline 
+            color="error" 
+            sx={{ fontSize: 48, mb: 2 }} 
+          />
+          <Typography 
+            variant="h6" 
+            color="error" 
+            gutterBottom
+          >
+            Error
+          </Typography>
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            paragraph
+          >
+            {error}
+          </Typography>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => navigate('/consumption')}
+            startIcon={<ArrowBack />}
+          >
+            Back to Consumption Sites
+          </Button>
+        </Paper>
+      </Box>
+    );
+  }
 
-  const handleEdit = (record) => {
-    setEditingRecord(record);
-    setNewData({
-      c1: record.c1 || '',
-      c2: record.c2 || '',
-      c3: record.c3 || '',
-      c4: record.c4 || '',
-      c5: record.c5 || ''
-    });
+  const handleEdit = (data) => {
+    setSelectedData(data);
     setOpenForm(true);
   };
 
-  const handleDelete = (recordToDelete) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      const updatedHistory = consumptionHistory.filter(
-        record => record.month !== recordToDelete.month
-      );
-      setConsumptionHistory(updatedHistory);
-      localStorage.setItem(`consumption_history_${siteId}`, JSON.stringify(updatedHistory));
-      
-      // Update chart data
-      const formattedData = updatedHistory.map(record => ({
-        month: record.month,
-        Consumption: record.consumption,
-        'Peak Demand': record.peakDemand,
-        'Off Peak': record.offPeak,
-        Renewable: record.renewable,
-        Grid: record.grid
-      }));
-      setChartData(formattedData);
-    }
+  const handleDelete = (month) => {
+    // Implement delete functionality
+    console.log('Delete:', month);
   };
 
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setNewData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const total = Object.values(newData)
-      .filter(val => !isNaN(Number(val)))
-      .reduce((sum, val) => sum + Number(val || 0), 0);
-
-    // Update consumption history
-    const newRecord = {
-      month: new Date().toLocaleString('default', { month: 'short' }),
-      ...newData,
-      total
-    };
-
-    let updatedHistory;
-    if (editingRecord) {
-      updatedHistory = consumptionHistory.map(record =>
-        record.month === editingRecord.month ? newRecord : record
-      );
-    } else {
-      updatedHistory = [newRecord, ...consumptionHistory];
-    }
-
-    setConsumptionHistory(updatedHistory);
-    localStorage.setItem(`consumption_history_${siteId}`, JSON.stringify(updatedHistory));
-
-    // Also update allocation data
-    const allocationEntry = {
-      id: Date.now().toString(),
-      userId: user.id,
-      siteId: siteId,
-      siteName: site?.name,
-      date: new Date().toISOString(),
-      month: newRecord.month,
-      consumption: newData.consumption || 0,
-      peakDemand: newData.peakDemand || 0,
-      offPeak: newData.offPeak || 0,
-      renewable: newData.renewable || 0,
-      grid: newData.grid || 0,
-      total: total
-    };
-
-    // Get existing allocations
-    const existingAllocations = JSON.parse(localStorage.getItem(`consumptionAllocations_${user.id}`) || '[]');
-    const updatedAllocations = [...existingAllocations, allocationEntry];
-    localStorage.setItem(`consumptionAllocations_${user.id}`, JSON.stringify(updatedAllocations));
-
-    handleCloseForm();
-  };
-
-  const handleCloseForm = () => {
+  const handleFormClose = () => {
     setOpenForm(false);
-    setEditingRecord(null);
-    setNewData({
-      c1: '',
-      c2: '',
-      c3: '',
-      c4: '',
-      c5: ''
-    });
+    setSelectedData(null);
   };
 
-  const renderFormDialog = () => {
-    return (
-      <Dialog 
-        open={openForm} 
-        onClose={handleCloseForm}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {editingRecord ? 'Edit Production Data' : 'Enter New Production Data'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ p: 1 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Production Units
-            </Typography>
-            <Grid container spacing={3}>
-              {/* C1 to C5 fields */}
-              {Array.from({ length: 5 }, (_, i) => {
-                const fieldName = `c${i + 1}`;
-                return (
-                  <Grid item xs={12} sm={6} key={fieldName}>
-                    <TextField
-                      fullWidth
-                      label={`C${i + 1} Production (Units)`}
-                      name={fieldName}
-                      value={newData[fieldName]}
-                      onChange={handleInputChange}
-                      type="number"
-                      InputProps={{
-                        inputProps: { min: 0 }
-                      }}
-                    />
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
-          <Button onClick={handleCloseForm}>Cancel</Button>
-          <Button 
-            onClick={handleSubmit} 
-            variant="contained" 
-            color="primary"
-          >
-            {editingRecord ? 'Update' : 'Submit'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  };
-
-  const renderHistoryTable = () => {
-    return (
-      <TableContainer sx={styles.tableWrapper}>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>Month</TableCell>
-              <TableCell>C1 (Units)</TableCell>
-              <TableCell>C2 (Units)</TableCell>
-              <TableCell>C3 (Units)</TableCell>
-              <TableCell>C4 (Units)</TableCell>
-              <TableCell>C5 (Units)</TableCell>
-              <TableCell>Total (Units)</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {consumptionHistory.map((record) => (
-              <TableRow key={record.month} hover>
-                <TableCell>{record.month}</TableCell>
-                <TableCell>{record.c1}</TableCell>
-                <TableCell>{record.c2}</TableCell>
-                <TableCell>{record.c3}</TableCell>
-                <TableCell>{record.c4}</TableCell>
-                <TableCell>{record.c5}</TableCell>
-                <TableCell>{record.total}</TableCell>
-                <TableCell>
-                  <Box sx={styles.actionButtons}>
-                    <IconButton 
-                      size="small" 
-                      color="primary"
-                      onClick={() => handleEdit(record)}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton 
-                      size="small" 
-                      color="error"
-                      onClick={() => handleDelete(record)}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
+  const handleFormSubmit = (formData) => {
+    // Implement form submit functionality
+    console.log('Form submitted:', formData);
+    setOpenForm(false);
+    setSelectedData(null);
   };
 
   return (
-    <Layout>
-      <Container maxWidth="lg">
-        <Box mt={3}>
-          {/* Back Button and Title */}
-          <Box display="flex" alignItems="center" mb={4}>
-            <Link to="/consumption" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <IconButton color="primary" sx={{ mr: 2 }}>
-                <ArrowBackIcon />
-              </IconButton>
-            </Link>
-            <Typography variant="h4" component="h1">
-              {site?.name} - Consumption Details
+    <Container maxWidth="xl">
+      {/* Back Button */}
+      <Box sx={{ mb: 3, mt: 2 }}>
+        <Button
+          variant="text"
+          color="primary"
+          onClick={() => navigate('/consumption')}
+          startIcon={<ArrowBack />}
+          sx={{ 
+            color: '#1a237e',
+            '&:hover': {
+              backgroundColor: 'rgba(26, 35, 126, 0.04)'
+            }
+          }}
+        >
+          BACK TO CONSUMPTION SITES
+        </Button>
+      </Box>
+
+      {/* Site Name Header */}
+      <Typography 
+        variant="h5" 
+        component="h1" 
+        sx={{ 
+          mb: 3,
+          fontWeight: 500,
+          color: '#1a237e'
+        }}
+      >
+        {site.name}
+      </Typography>
+
+      <Grid container spacing={3}>
+        {/* Left Column - Site Information */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Typography 
+              variant="h6" 
+              component="h2" 
+              sx={{ 
+                mb: 3,
+                color: '#1a237e',
+                fontWeight: 500
+              }}
+            >
+              Site Information
             </Typography>
-          </Box>
 
-          <Grid container spacing={4}>
-            {/* Left Side - Site Information */}
-            <Grid item xs={12} md={4}>
-              <Paper elevation={3} sx={{ p: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Site Information
-                </Typography>
-                <Box sx={{ '& > div': { mb: 2 } }}>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Site
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.name || SAMPLE_SITE_INFO.name}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Location
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.location || SAMPLE_SITE_INFO.location}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Type
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.type || SAMPLE_SITE_INFO.type}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Capacity
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.capacity || SAMPLE_SITE_INFO.capacity} units
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Grid
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.grid || SAMPLE_SITE_INFO.grid}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Status
-                    </Typography>
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        color: (site?.status || SAMPLE_SITE_INFO.status) === 'active' 
-                          ? 'success.main' 
-                          : 'error.main',
-                        textTransform: 'capitalize'
+            <List>
+              <ListItem>
+                <ListItemIcon>
+                  <LocationOn color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary={site.location}
+                  secondary={site.coordinates}
+                />
+              </ListItem>
+
+              {/* Grid & Connection */}
+              <ListItem>
+                <ListItemIcon>
+                  <Power color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Grid & Connection"
+                  secondary={`Grid: ${site.grid}\nConnection Type: ${site.connectionType}`}
+                />
+              </ListItem>
+
+              {/* Status & Type */}
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Status & Type"
+                  secondary={`Status: ${site.status}\nType: ${site.type}\nCompany Type: ${site.companyType}`}
+                />
+              </ListItem>
+
+              {/* Capacity & Area */}
+              <ListItem>
+                <ListItemIcon>
+                  <Speed color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Capacity & Area"
+                  secondary={
+                    <>
+                      Capacity: {site.capacity}<br />
+                      Total Area: {site.totalArea}<br />
+                      Service Number: {site.serviceNumber}
+                    </>
+                  }
+                />
+              </ListItem>
+
+              {/* Service Information */}
+              <ListItem>
+                <ListItemIcon>
+                  <Assignment color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Service Information"
+                  secondary={
+                    <>
+                      Service Number: {site.serviceNumber}<br />
+                    </>
+                  }
+                />
+              </ListItem>
+            </List>
+          </Paper>
+        </Grid>
+
+        {/* Right Column - Chart and Data */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Box>
+                <Button
+                  variant={chartType === 'line' ? 'contained' : 'outlined'}
+                  onClick={() => setChartType('line')}
+                  sx={{ mr: 1 }}
+                >
+                  LINE CHART
+                </Button>
+                <Button
+                  variant={chartType === 'bar' ? 'contained' : 'outlined'}
+                  onClick={() => setChartType('bar')}
+                >
+                  BAR CHART
+                </Button>
+              </Box>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setOpenForm(true)}
+              >
+                + ENTER NEW DATA
+              </Button>
+            </Box>
+
+            {/* Chart */}
+            <Box sx={{ width: '100%', height: 400 }}>
+              <ResponsiveContainer>
+                {chartType === 'line' ? (
+                  <LineChart data={historicalData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="month" 
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                       }}
-                    >
-                      {site?.status || SAMPLE_SITE_INFO.status}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Banking
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.banking || SAMPLE_SITE_INFO.banking}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Service Number/REC
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.serviceNumber || SAMPLE_SITE_INFO.serviceNumber}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle2" color="textSecondary">
-                      Company Name
-                    </Typography>
-                    <Typography variant="body1">
-                      {site?.companyName || SAMPLE_SITE_INFO.companyName}
-                    </Typography>
-                  </Box>
-                </Box>
-              </Paper>
-            </Grid>
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      labelFormatter={(value) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      }}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="c1" stroke="#8884d8" name="C1" dot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="c2" stroke="#82ca9d" name="C2" dot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="c3" stroke="#ffc658" name="C3" dot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="c4" stroke="#ff7300" name="C4" dot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="c5" stroke="#ff0000" name="C5" dot={{ r: 6 }} />
+                  </LineChart>
+                ) : (
+                  <BarChart data={historicalData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="month" 
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                      }}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      labelFormatter={(value) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="c1" fill="#8884d8" name="C1" />
+                    <Bar dataKey="c2" fill="#82ca9d" name="C2" />
+                    <Bar dataKey="c3" fill="#ffc658" name="C3" />
+                    <Bar dataKey="c4" fill="#ff7300" name="C4" />
+                    <Bar dataKey="c5" fill="#ff0000" name="C5" />
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
 
-            {/* Right Side - Charts */}
-            <Grid item xs={12} md={8}>
-              <Paper elevation={3} sx={styles.chartPaper}>
-                {/* Chart Type Buttons */}
-                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Button
-                      variant={chartType === 'LINE_CHART' ? 'contained' : 'outlined'}
-                      onClick={() => handleChartTypeChange('LINE_CHART')}
-                      sx={{ mr: 2 }}
-                    >
-                      Line Chart
-                    </Button>
-                    <Button
-                      variant={chartType === 'BAR_CHART' ? 'contained' : 'outlined'}
-                      onClick={() => handleChartTypeChange('BAR_CHART')}
-                    >
-                      Bar Chart
-                    </Button>
-                  </Box>
-                  <Button 
-                    variant="contained" 
-                    color="primary"
-                    onClick={() => setOpenForm(true)}
-                    startIcon={<AddIcon />}
-                  >
-                    Enter New Data
-                  </Button>
-                </Box>
+          {/* Historical Data Table */}
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Historical Data
+            </Typography>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Month</TableCell>
+                    <TableCell>C1</TableCell>
+                    <TableCell>C2</TableCell>
+                    <TableCell>C3</TableCell>
+                    <TableCell>C4</TableCell>
+                    <TableCell>C5</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {historicalData.map((row) => (
+                    <TableRow key={row.month}>
+                      <TableCell>{row.month}</TableCell>
+                      <TableCell>{row.c1}</TableCell>
+                      <TableCell>{row.c2}</TableCell>
+                      <TableCell>{row.c3}</TableCell>
+                      <TableCell>{row.c4}</TableCell>
+                      <TableCell>{row.c5}</TableCell>
+                      <TableCell>
+                        <IconButton size="small" onClick={() => handleEdit(row)}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleDelete(row.month)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+      </Grid>
 
-                {/* Chart */}
-                <Box sx={{ width: '100%', height: 400, overflowX: 'auto' }}>
-                  {renderChart()}
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Full Width Consumption History */}
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={styles.historyPaper}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                  <Typography variant="h6" fontWeight="medium">
-                    Production History
-                  </Typography>
-                </Box>
-                {renderHistoryTable()}
-              </Paper>
-            </Grid>
-          </Grid>
-
-          {/* Add the form dialog */}
-          {renderFormDialog()}
-        </Box>
-      </Container>
-    </Layout>
+      {/* Data Entry Form Dialog */}
+      {openForm && (
+        <ProductionDataForm
+          open={openForm}
+          onClose={handleFormClose}
+          onSubmit={handleFormSubmit}
+          initialData={selectedData}
+        />
+      )}
+    </Container>
   );
 };
-
-// You can also add more sample sites if needed
-const SAMPLE_SITES = [
-  {
-    id: 'C1',
-    name: "Chennai Industrial Park",
-    location: "Chennai, Tamil Nadu",
-    type: "INDUSTRIAL",
-    capacity: "10000",
-    grid: "Tamil Nadu Grid",
-    status: "active",
-    banking: "Yes",
-    serviceNumber: "TN45678/IND",
-    companyName: "M/s Chennai Manufacturing Ltd"
-  },
-  {
-    id: 'C2',
-    name: "Bangalore Tech Hub",
-    location: "Bangalore, Karnataka",
-    type: "COMMERCIAL",
-    capacity: "8000",
-    grid: "Karnataka Grid",
-    status: "active",
-    banking: "Yes",
-    serviceNumber: "KA34567/COM",
-    companyName: "M/s Bangalore Tech Solutions"
-  },
-  // Add more sample sites as needed
-];
 
 export default ConsumptionSiteDetails;

@@ -21,11 +21,11 @@ const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 const defaultFormData = {
   month: months[new Date().getMonth()],
   year: currentYear,
-  c1: '',
-  c2: '',
-  c3: '',
-  c4: '',
-  c5: '',
+  C1: '',
+  C2: '',
+  C3: '',
+  C4: '',
+  C5: '',
 };
 
 const ConsumptionDataForm = ({ open, onClose, onSubmit, initialData }) => {
@@ -88,15 +88,15 @@ const ConsumptionDataForm = ({ open, onClose, onSubmit, initialData }) => {
             </TextField>
           </Grid>
 
-          {/* Consumer Units C1-C5 */}
+          {/* C1-C5 Units */}
           {[1, 2, 3, 4, 5].map(num => (
             <Grid item xs={12} sm={6} md={4} key={`c${num}`}>
               <TextField
                 fullWidth
-                label={`C${num} Consumption (Units)`}
-                name={`c${num}`}
+                label={`C${num} Units`}
+                name={`C${num}`}
                 type="number"
-                value={formData[`c${num}`]}
+                value={formData[`C${num}`]}
                 onChange={handleChange}
               />
             </Grid>

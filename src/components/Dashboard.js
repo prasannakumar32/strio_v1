@@ -1,191 +1,162 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Box, Grid, Paper, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  Grid,
-  Paper,
-  Typography,
-  Card,
-  CardContent,
-  CardActionArea,
-  CircularProgress
-} from '@mui/material';
 import {
   Factory as FactoryIcon,
   Business as BusinessIcon,
   SwapHoriz as SwapHorizIcon,
-  Assessment as AssessmentIcon
+  Assessment as AssessmentIcon,
+  Power as PowerIcon,
+  Speed as SpeedIcon,
+  CheckCircle as CheckCircleIcon,
+  WindPower as WindPowerIcon,
+  WbSunny as WbSunnyIcon,
+  Storage as StorageIcon,
+  Pending as PendingIcon,
+  Update as UpdateIcon,
+  Assignment as AssignmentIcon,
+  CalendarMonth as CalendarMonthIcon,
 } from '@mui/icons-material';
-import Layout from './Layout';
-import { useSiteContext } from '../context/SiteContext';
 
-const Dashboard = () => {
+function Dashboard() {
   const navigate = useNavigate();
-  const { productionSites, consumptionSites } = useSiteContext();
-  const [dashboardData, setDashboardData] = useState({
+
+  const stats = {
     production: {
-      count: 0,
-      totalCapacity: 0,
-      activeCount: 0
+      totalSites: { value: 2, icon: <FactoryIcon /> },
+      totalCapacity: { value: '150 units', icon: <PowerIcon /> },
+      activeSites: { value: 2, icon: <CheckCircleIcon /> },
+      windSites: { value: 0, icon: <WindPowerIcon /> },
+      solarSites: { value: 0, icon: <WbSunnyIcon /> },
     },
     consumption: {
-      count: 0,
-      totalConsumption: 0,
-      activeCount: 0
+      totalSites: { value: 0, icon: <BusinessIcon /> },
+      totalConsumption: { value: '0 units', icon: <SpeedIcon /> },
+      activeSites: { value: 0, icon: <CheckCircleIcon /> },
     },
     allocation: {
-      totalAllocated: 0,
-      pendingCount: 0
+      totalAllocated: { value: '120 units', icon: <StorageIcon /> },
+      pendingAllocations: { value: 1, icon: <PendingIcon /> },
+      recentAllocations: { value: 2, icon: <UpdateIcon /> },
+      availableForAllocation: { value: '30 units', icon: <SwapHorizIcon /> },
     },
     reports: {
-      totalReports: 0,
-      lastUpdated: null
+      totalReports: { value: 2, icon: <AssignmentIcon /> },
+      lastUpdated: { value: '17/12/2024', icon: <CalendarMonthIcon /> },
+    },
+  };
+
+  const cardColors = {
+    production: {
+      main: '#00bcd4',
+      light: '#e0f7fa'
+    },
+    consumption: {
+      main: '#e91e63',
+      light: '#fce4ec'
+    },
+    allocation: {
+      main: '#757575',
+      light: '#f5f5f5'
+    },
+    reports: {
+      main: '#ffc107',
+      light: '#fff8e1'
     }
-  });
-  const [loading, setLoading] = useState(true);
+  };
 
-  useEffect(() => {
-    const calculateDashboardData = () => {
-      try {
-        // Calculate Production Stats
-        const productionStats = {
-          count: productionSites?.length || 0,
-          totalCapacity: productionSites?.reduce((sum, site) => sum + Number(site.capacity || 0), 0) || 0,
-          activeCount: productionSites?.filter(site => site.status === 'active').length || 0
-        };
-
-        // Calculate Consumption Stats
-        const consumptionStats = {
-          count: consumptionSites?.length || 0,
-          totalConsumption: consumptionSites?.reduce((sum, site) => sum + Number(site.consumption || 0), 0) || 0,
-          activeCount: consumptionSites?.filter(site => site.status === 'active').length || 0
-        };
-
-        // Get allocation data from localStorage or calculate
-        const allocationData = JSON.parse(localStorage.getItem('allocationData')) || {
-          totalAllocated: productionStats.totalCapacity * 0.8, // Example calculation
-          pendingCount: Math.floor(Math.random() * 5) // Example random pending count
-        };
-
-        // Get reports data from localStorage or set default
-        const reportsData = JSON.parse(localStorage.getItem('reportsData')) || {
-          totalReports: productionStats.count + consumptionStats.count,
-          lastUpdated: new Date().toISOString()
-        };
-
-        setDashboardData({
-          production: productionStats,
-          consumption: consumptionStats,
-          allocation: allocationData,
-          reports: reportsData
-        });
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error calculating dashboard data:', error);
-        setLoading(false);
-      }
-    };
-
-    calculateDashboardData();
-  }, [productionSites, consumptionSites]);
-
-  const cards = [
-    {
-      title: 'Production',
-      icon: <FactoryIcon sx={{ fontSize: 40, color: 'primary.main' }} />,
-      stats: [
-        { label: 'Total Sites', value: dashboardData.production.count },
-        { label: 'Total Capacity', value: `${dashboardData.production.totalCapacity} MW` },
-        { label: 'Active Sites', value: dashboardData.production.activeCount }
-      ],
-      path: '/production'
-    },
-    {
-      title: 'Consumption',
-      icon: <BusinessIcon sx={{ fontSize: 40, color: 'secondary.main' }} />,
-      stats: [
-        { label: 'Total Sites', value: dashboardData.consumption.count },
-        { label: 'Total Consumption', value: `${dashboardData.consumption.totalConsumption} units` },
-        { label: 'Active Sites', value: dashboardData.consumption.activeCount }
-      ],
-      path: '/consumption'
-    },
-    {
-      title: 'Allocation',
-      icon: <SwapHorizIcon sx={{ fontSize: 40, color: 'success.main' }} />,
-      stats: [
-        { label: 'Total Allocated', value: `${dashboardData.allocation.totalAllocated} MW` },
-        { label: 'Pending Allocations', value: dashboardData.allocation.pendingCount }
-      ],
-      path: '/allocation'
-    },
-    {
-      title: 'Reports',
-      icon: <AssessmentIcon sx={{ fontSize: 40, color: 'warning.main' }} />,
-      stats: [
-        { label: 'Total Reports', value: dashboardData.reports.totalReports },
-        { label: 'Last Updated', value: new Date(dashboardData.reports.lastUpdated).toLocaleDateString() }
-      ],
-      path: '/reports'
-    }
-  ];
-
-  if (loading) {
-    return (
-      <Layout>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
+  const StatBox = ({ title, items, color }) => (
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        borderRadius: 2,
+        height: '100%',
+        cursor: 'pointer',
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 6,
+          bgcolor: color.light,
+        },
+      }}
+      onClick={() => navigate(`/${title.toLowerCase()}`)}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        {title === 'Production' && <FactoryIcon sx={{ color: color.main, mr: 1, fontSize: 28 }} />}
+        {title === 'Consumption' && <BusinessIcon sx={{ color: color.main, mr: 1, fontSize: 28 }} />}
+        {title === 'Allocation' && <SwapHorizIcon sx={{ color: color.main, mr: 1, fontSize: 28 }} />}
+        {title === 'Reports' && <AssessmentIcon sx={{ color: color.main, mr: 1, fontSize: 28 }} />}
+        <Typography variant="h6" sx={{ color: color.main }}>
+          {title}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {Object.entries(items).map(([key, data]) => (
+          <Box key={key} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box 
+              sx={{ 
+                mr: 2, 
+                color: color.main,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                borderRadius: 1,
+                bgcolor: color.light,
+              }}
+            >
+              {React.cloneElement(data.icon, { sx: { fontSize: 20 } })}
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                {key.replace(/([A-Z])/g, ' $1').trim()}
+              </Typography>
+              <Typography variant="body1" fontWeight="medium">
+                {data.value}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Paper>
+  );
 
   return (
-    <Layout>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Grid container spacing={3}>
-          {cards.map((card, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Card 
-                elevation={3}
-                sx={{ 
-                  height: '100%',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <CardActionArea onClick={() => navigate(card.path)} sx={{ height: '100%' }}>
-                  <CardContent>
-                    <Box display="flex" alignItems="center" mb={2}>
-                      {card.icon}
-                      <Typography variant="h6" component="div" sx={{ ml: 1 }}>
-                        {card.title}
-                      </Typography>
-                    </Box>
-                    {card.stats.map((stat, idx) => (
-                      <Box key={idx} mb={1}>
-                        <Typography color="textSecondary" variant="body2">
-                          {stat.label}
-                        </Typography>
-                        <Typography variant="h6" component="div">
-                          {stat.value}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          ))}
+    <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={3}>
+          <StatBox
+            title="Production"
+            items={stats.production}
+            color={cardColors.production}
+          />
         </Grid>
-      </Container>
-    </Layout>
+        <Grid item xs={12} md={3}>
+          <StatBox
+            title="Consumption"
+            items={stats.consumption}
+            color={cardColors.consumption}
+          />
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <StatBox
+            title="Allocation"
+            items={stats.allocation}
+            color={cardColors.allocation}
+          />
+        </Grid>
+        <Grid item xs={12} md={3}>
+          <StatBox
+            title="Reports"
+            items={stats.reports}
+            color={cardColors.reports}
+          />
+        </Grid>
+      </Grid>
+    </Box>
   );
-};
+}
 
 export default Dashboard;

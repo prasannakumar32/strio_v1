@@ -1,28 +1,26 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Select from 'react-select';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchSites, setSelectedSite } from '../redux/siteSlice';
 import { useNavigate } from 'react-router-dom';
+import { useSiteContext } from '../context/SiteContext';
 
 const ConsumptionSiteSelector = () => {
-  const dispatch = useDispatch();
-  const { sites } = useSelector((state) => state.sites);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    dispatch(fetchSites());
-  }, [dispatch]);
+  const { consumptionSites, loading } = useSiteContext();
 
   const handleSiteSelection = (selected) => {
-    dispatch(setSelectedSite(selected));
-    const numericId = selected.id.replace('C', '');
-    navigate(`/consumption/view/${numericId}`);
+    if (!selected) return;
+    // The ID is already in the correct format (C1, C2, etc.)
+    navigate(`/consumption/view/${selected.id}`);
   };
+
+  if (loading) {
+    return <div>Loading sites...</div>;
+  }
 
   return (
     <div className="consumption-site-selector">
       <Select 
-        options={sites}
+        options={consumptionSites}
         onChange={handleSiteSelection}
         getOptionLabel={(option) => option.name}
         getOptionValue={(option) => option.id}
@@ -33,4 +31,4 @@ const ConsumptionSiteSelector = () => {
   );
 };
 
-export default ConsumptionSiteSelector; 
+export default ConsumptionSiteSelector;

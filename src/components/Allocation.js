@@ -1,42 +1,49 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Box,
+  Container,
   Paper,
+  Typography,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
-  IconButton,
   Button,
+  Box,
+  IconButton,
+  Grid,
   Card,
   CardContent,
-  Grid,
   Link,
   Divider,
   Tooltip
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import DownloadIcon from '@mui/icons-material/Download';
-import UpdateIcon from '@mui/icons-material/Update';
+import {
+  Edit as EditIcon,
+  Visibility as VisibilityIcon,
+  Refresh as RefreshIcon,
+  Autorenew as AutorenewIcon,
+  Download as DownloadIcon,
+  Update as UpdateIcon
+} from '@mui/icons-material';
 import { useStorage } from '../context/StorageContext';
 import AllocationEditForm from './AllocationEditForm';
 import { PRODUCTION_SITES, CONSUMPTION_SITES } from '../data/sites';
-import { useNavigate } from 'react-router-dom';
+import { getConsumptionSites } from '../utils/consumptionStorage';
 
-function Allocation() {
+const Allocation = () => {
+  const navigate = useNavigate();
+  const { updateMonthlyData } = useStorage();
+  const [consumptionSites, setConsumptionSites] = useState([]);
+  const [productionSites, setProductionSites] = useState(PRODUCTION_SITES);
   const [allocationDetails, setAllocationDetails] = useState([]);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [updateType, setUpdateType] = useState(null); // 'edit' or 'update'
   const [refreshKey, setRefreshKey] = useState(0);
-  const [productionSites, setProductionSites] = useState(PRODUCTION_SITES);
-  const [consumptionSites, setConsumptionSites] = useState(CONSUMPTION_SITES);
   const [allocationSummary, setAllocationSummary] = useState({
     totalProduction: 0,
     totalAllocated: 0,
@@ -44,10 +51,33 @@ function Allocation() {
     lapse: 0
   });
 
-  const navigate = useNavigate();
-  const { updateMonthlyData } = useStorage();
+  useEffect(() => {
+    const loadSites = async () => {
+      const sites = await getConsumptionSites();
+      const sitesWithLatestValues = sites.map(site => {
+        const latestData = site.historicalData[0];
+        const total = Object.keys(latestData)
+          .filter(key => key.startsWith('c'))
+          .reduce((sum, key) => sum + (latestData[key] || 0), 0);
 
-  const handleViewDetails = (site, type) => {
+        return {
+          id: site.id,
+          name: site.name,
+          location: site.location,
+          c1: latestData.c1 || 0,
+          c2: latestData.c2 || 0,
+          c3: latestData.c3 || 0,
+          c4: latestData.c4 || 0,
+          c5: latestData.c5 || 0,
+          total: total
+        };
+      });
+      setConsumptionSites(sitesWithLatestValues);
+    };
+    loadSites();
+  }, []);
+
+  const handleViewDetails = (siteId, type) => {
     try {
       if (type === 'PRODUCTION') {
         // Map the site IDs to their correct view IDs
@@ -56,7 +86,7 @@ function Allocation() {
           'PUDUKOTTAI': 'PS1'
         };
         
-        const siteId = siteIdMapping[site.id];
+        const siteId = siteIdMapping[siteId];
         if (siteId) {
           if (siteId === 'PS1' || siteId === 'PW1') {
             navigate(`/production/${siteId}`);
@@ -64,15 +94,11 @@ function Allocation() {
             navigate(`/production/view/${siteId}`);
           }
         } else {
-          console.error('Unknown production site:', site.id);
+          console.error('Unknown production site:', siteId);
         }
       } else if (type === 'CONSUMPTION') {
         // Use the site ID directly from the consumption site
-        if (site.id) {
-          navigate(`/consumption/view/${site.id}`);
-        } else {
-          console.error('Unknown consumption site:', site);
-        }
+        navigate(`/consumption/${siteId}`);
       }
     } catch (error) {
       console.error('Navigation error:', error);
@@ -374,7 +400,7 @@ function Allocation() {
                       <Tooltip title="View Details">
                         <IconButton 
                           size="small"
-                          onClick={() => handleViewDetails(site, 'PRODUCTION')}
+                          onClick={() => handleViewDetails(site.id, 'PRODUCTION')}
                           sx={{ color: '#2e7d32' }}
                         >
                           <VisibilityIcon fontSize="small" />
@@ -440,7 +466,7 @@ function Allocation() {
                       <Tooltip title="View Details">
                         <IconButton 
                           size="small"
-                          onClick={() => handleViewDetails(site, 'CONSUMPTION')}
+                          onClick={() => handleViewDetails(site.id, 'CONSUMPTION')}
                           sx={{ color: '#2e7d32' }}
                         >
                           <VisibilityIcon fontSize="small" />
@@ -621,24 +647,21 @@ function Allocation() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          mb: 4, 
-          color: '#1a237e',
-          textAlign: 'center',
-          fontWeight: 600,
-          bgcolor: '#e8eaf6',
-          py: 2,
-          borderRadius: 1
-        }}
-      >
-        Allocation Management
-      </Typography>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ bgcolor: '#f5f5ff', p: 2, mb: 4, borderRadius: 1 }}>
+        <Typography variant="h4" align="center" sx={{ color: '#1a237e' }}>
+          Allocation Management
+        </Typography>
+      </Box>
 
+      <Typography variant="h6" sx={{ mb: 2, color: '#1a237e' }}>
+        Production Sites
+      </Typography>
       {renderProductionTable()}
 
+      <Typography variant="h6" sx={{ mt: 4, mb: 2, color: '#1a237e' }}>
+        Consumption Sites
+      </Typography>
       {renderConsumptionTable()}
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
@@ -712,8 +735,8 @@ function Allocation() {
         type={selectedType}
         updateType={updateType}
       />
-    </Box>
+    </Container>
   );
-}
+};
 
 export default Allocation;

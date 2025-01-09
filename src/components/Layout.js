@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Box,
   Toolbar,
   IconButton,
   Typography,
+  Menu,
+  MenuItem,
+  Avatar
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -12,7 +15,8 @@ import {
   ViewModule as ViewModuleIcon,
   CompareArrows as CompareArrowsIcon,
   BarChart as BarChartIcon,
-  AccountCircle as AccountCircleIcon
+  AccountCircle as AccountCircleIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { StorageProvider } from '../context/StorageContext';
@@ -29,6 +33,25 @@ const navItems = [
 function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const username = localStorage.getItem('username') || 'User'; // Get username from localStorage
+
+  const handleMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('username');
+    localStorage.removeItem('token');
+    // Navigate to login page
+    navigate('/login');
+    handleClose();
+  };
 
   return (
     <StorageProvider>
@@ -78,9 +101,41 @@ function Layout() {
             </Box>
 
             {/* User Profile */}
-            <IconButton color="inherit">
-              <AccountCircleIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="body1" sx={{ mr: 1, color: 'white' }}>
+                {username}
+              </Typography>
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+              >
+                <AccountCircleIcon />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+              >
+                <MenuItem onClick={handleLogout}>
+                  <LogoutIcon sx={{ mr: 1 }} />
+                  Logout
+                </MenuItem>
+              </Menu>
+            </Box>
           </Toolbar>
         </AppBar>
 

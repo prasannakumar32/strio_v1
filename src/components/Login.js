@@ -28,6 +28,9 @@ function Login() {
     try {
       const response = await apiService.login(username, password);
       if (response.success) {
+        // Store username and token in localStorage
+        localStorage.setItem('username', username);
+        localStorage.setItem('token', response.token);
         // Login successful, redirect to dashboard
         navigate('/dashboard');
       } else {
@@ -131,21 +134,7 @@ function Login() {
               ) : (
                 'Sign In'
               )}
-            </Button>
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Demo Credentials:
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Username: strioadmin | Password: admin123
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Username: striouser | Password: user123
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Username: testcase1 | Password: test123
-              </Typography>
-            </Box>
+            </Button>i
           </Box>
         </Paper>
       </Box>

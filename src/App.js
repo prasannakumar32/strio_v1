@@ -105,13 +105,8 @@ const router = createBrowserRouter([
             element: <Consumption />
           },
           {
-            path: "view/:id",
-            element: <ConsumptionSiteDetails />,
-            errorElement: <ErrorBoundary />
-          },
-          {
             path: ":id",
-            element: <Navigate to="view/:id" replace />,
+            element: <ConsumptionSiteDetails />,
             errorElement: <ErrorBoundary />
           }
         ]

@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
+  Typography,
+  Box,
+  Button,
   Grid,
   Paper,
-  Typography,
-  Button,
-  Box,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
+  Tabs,
+  Tab,
   Table,
   TableBody,
   TableCell,
@@ -18,485 +20,703 @@ import {
   TableHead,
   TableRow,
   IconButton,
-  CircularProgress
+  ToggleButtonGroup,
+  ToggleButton,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
+  TextField,
+  MenuItem
 } from '@mui/material';
 import {
-  LocationOn,
-  Business,
-  Power,
-  Speed,
-  Assignment,
+  ArrowBack as ArrowBackIcon,
+  LocationOn as LocationIcon,
+  Business as BusinessIcon,
+  PowerSettingsNew as StatusIcon,
+  GridOn as GridIcon,
+  Speed as CapacityIcon,
+  Numbers as ServiceNumberIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  ErrorOutline,
-  ArrowBack,
-  CheckCircle
+  Add as AddIcon
 } from '@mui/icons-material';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  BarChart, 
-  Bar, 
-  ResponsiveContainer 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar
 } from 'recharts';
-import ProductionDataForm from './ProductionDataForm';
+import { getProductionSites } from '../utils/productionStorage';
 
-const siteData = {
-  'PS1': {
-    id: 'PUDUKOTTAI',
-    name: 'Pudukottai Solar',
-    location: 'Pudukottai',
-    coordinates: '10.3789° N, 78.8243° E',
-    grid: 'TANGEDCO',
-    connectionType: 'HT',
-    status: 'Active',
-    type: 'SOLAR',
-    companyType: 'RENEWABLE',
-    capacity: '1000 MW',
-    totalArea: '500 acres',
-    panelType: 'Monocrystalline',
-    inverterCapacity: '1000 KW',
-    transformerCapacity: '1000 KVA',
-    serviceNumber: '069534460069'
-  },
-  'PW1': {
-    id: 'TIRUNELVELI',
-    name: 'Tirunelveli Wind',
-    location: 'Tirunelveli',
-    coordinates: '8.2574° N, 77.6127° E',
-    grid: 'TANGEDCO',
-    connectionType: 'HT',
-    status: 'Active',
-    type: 'WIND',
-    companyType: 'RENEWABLE',
-    capacity: '600 MW',
-    totalArea: '300 acres',
-    turbineType: 'Horizontal Axis',
-    inverterCapacity: '600 KW',
-    transformerCapacity: '600 KVA',
-    serviceNumber: '079204721131'
-  }
-};
-
-const mockHistoricalData = {
-  'PS1': [
-    {
-      month: '2025-01',
-      C1: 42000,
-      C2: 0,
-      C3: 0,
-      C4: 118000,
-      C5: 0,
-      total: 160000
-    },
-    {
-      month: '2024-12',
-      C1: 41000,
-      C2: 0,
-      C3: 0,
-      C4: 115000,
-      C5: 0,
-      total: 156000
-    },
-    {
-      month: '2024-11',
-      C1: 40000,
-      C2: 0,
-      C3: 0,
-      C4: 112000,
-      C5: 0,
-      total: 152000
-    }
-  ],
-  'PW1': [
-    {
-      month: '2025-01',
-      C1: 11500,
-      C2: 15500,
-      C3: 0,
-      C4: 46000,
-      C5: 23000,
-      total: 96000
-    },
-    {
-      month: '2024-12',
-      C1: 11000,
-      C2: 15000,
-      C3: 0,
-      C4: 45000,
-      C5: 22000,
-      total: 93000
-    },
-    {
-      month: '2024-11',
-      C1: 10500,
-      C2: 14500,
-      C3: 0,
-      C4: 44000,
-      C5: 21000,
-      total: 90000
-    }
-  ]
-};
-
-const ProductionSiteDetails = () => {
-  const { id } = useParams();
+function ProductionSiteDetails() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [site, setSite] = useState(null);
+  const [selectedTab, setSelectedTab] = useState('unit');
   const [chartType, setChartType] = useState('line');
-  const [openForm, setOpenForm] = useState(false);
-  const [historicalData, setHistoricalData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [newData, setNewData] = useState({
+    month: '',
+    c1: '',
+    c2: '',
+    c3: '',
+    c4: '',
+    c5: '',
+    c001: '',
+    c002: '',
+    c003: '',
+    c004: '',
+    c005: '',
+    c006: '',
+    c007: '',
+    c008: ''
+  });
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedData, setSelectedData] = useState(null);
-  const [error, setError] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   useEffect(() => {
-    if (!id) {
-      setError('Site ID is required');
-      setLoading(false);
-      return;
-    }
-
-    const site = siteData[id];
-    if (!site) {
-      setError(`Site not found: ${id}`);
-      setLoading(false);
-      return;
-    }
-
-    // Load historical data
-    const data = mockHistoricalData[id] || [];
-    setHistoricalData(data);
-    setLoading(false);
+    const loadSiteData = async () => {
+      try {
+        const sites = await getProductionSites();
+        const foundSite = sites.find(s => s.id === id);
+        if (foundSite) {
+          setSite({
+            ...foundSite,
+            unitMatrixData: [
+              {
+                month: 'July',
+                c1: 789,
+                c2: 67,
+                c3: 88,
+                c4: 67,
+                c5: 89
+              },
+              {
+                month: 'February',
+                c1: 786,
+                c2: 67,
+                c3: 88,
+                c4: 67,
+                c5: 89
+              },
+              {
+                month: 'May',
+                c1: 456,
+                c2: 45,
+                c3: 78,
+                c4: 90,
+                c5: 34
+              }
+            ],
+            chargesMatrixData: [
+              {
+                month: 'July',
+                c001: 234,
+                c002: 567,
+                c003: 890,
+                c004: 123,
+                c005: 456,
+                c006: 789,
+                c007: 234,
+                c008: 567
+              },
+              {
+                month: 'February',
+                c001: 345,
+                c002: 678,
+                c003: 901,
+                c004: 234,
+                c005: 567,
+                c006: 890,
+                c007: 123,
+                c008: 456
+              },
+              {
+                month: 'May',
+                c001: 456,
+                c002: 789,
+                c003: 123,
+                c004: 456,
+                c005: 789,
+                c006: 234,
+                c007: 567,
+                c008: 890
+              }
+            ],
+            cData: [
+              {
+                id: 1,
+                month: 'July',
+                c1: 789,
+                c2: 67,
+                c3: 88,
+                c4: 67,
+                c5: 89
+              },
+              {
+                id: 2,
+                month: 'February',
+                c1: 786,
+                c2: 67,
+                c3: 88,
+                c4: 67,
+                c5: 89
+              },
+              {
+                id: 3,
+                month: 'May',
+                c1: 456,
+                c2: 45,
+                c3: 78,
+                c4: 90,
+                c5: 34
+              }
+            ]
+          });
+        }
+      } catch (error) {
+        console.error('Error loading site data:', error);
+      }
+    };
+    loadSiteData();
   }, [id]);
 
-  const formatMonthDisplay = (monthStr) => {
-    const date = new Date(monthStr + '-01');
-    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
   };
 
-  const renderChart = () => {
-    if (loading) return <CircularProgress />;
-    if (error) return <Typography color="error">{error}</Typography>;
-    if (!historicalData.length) return <Typography>No historical data available</Typography>;
-
-    const chartHeight = 400;
-    
-    return (
-      <Box sx={{ width: '100%', height: chartHeight, mt: 3 }}>
-        <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-          <Button
-            variant={chartType === 'line' ? 'contained' : 'outlined'}
-            onClick={() => setChartType('line')}
-          >
-            LINE CHART
-          </Button>
-          <Button
-            variant={chartType === 'bar' ? 'contained' : 'outlined'}
-            onClick={() => setChartType('bar')}
-          >
-            BAR CHART
-          </Button>
-        </Box>
-        
-        <ResponsiveContainer>
-          {chartType === 'line' ? (
-            <LineChart data={historicalData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" tickFormatter={formatMonthDisplay} />
-              <YAxis />
-              <Tooltip 
-                labelFormatter={formatMonthDisplay}
-                formatter={(value) => [`${value.toLocaleString()} KWh`, '']}
-              />
-              <Legend />
-              <Line type="monotone" dataKey="C1" stroke="#8884d8" name="C1" />
-              <Line type="monotone" dataKey="C2" stroke="#82ca9d" name="C2" />
-              <Line type="monotone" dataKey="C3" stroke="#ffc658" name="C3" />
-              <Line type="monotone" dataKey="C4" stroke="#ff7300" name="C4" />
-              <Line type="monotone" dataKey="C5" stroke="#ff0000" name="C5" />
-            </LineChart>
-          ) : (
-            <BarChart data={historicalData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" tickFormatter={formatMonthDisplay} />
-              <YAxis />
-              <Tooltip 
-                labelFormatter={formatMonthDisplay}
-                formatter={(value) => [`${value.toLocaleString()} KWh`, '']}
-              />
-              <Legend />
-              <Bar dataKey="C1" fill="#8884d8" name="C1" />
-              <Bar dataKey="C2" fill="#82ca9d" name="C2" />
-              <Bar dataKey="C3" fill="#ffc658" name="C3" />
-              <Bar dataKey="C4" fill="#ff7300" name="C4" />
-              <Bar dataKey="C5" fill="#ff0000" name="C5" />
-            </BarChart>
-          )}
-        </ResponsiveContainer>
-      </Box>
-    );
+  const getDataKeys = () => {
+    if (selectedTab === 'unit') {
+      return ['c1', 'c2', 'c3', 'c4', 'c5'];
+    }
+    return ['c001', 'c002', 'c003', 'c004', 'c005', 'c006', 'c007', 'c008'];
   };
 
-  const renderHistoricalTable = () => {
-    if (loading) return <CircularProgress />;
-    if (error) return <Typography color="error">{error}</Typography>;
-    if (!historicalData.length) return <Typography>No historical data available</Typography>;
-
-    return (
-      <TableContainer component={Paper} sx={{ mt: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Month</TableCell>
-              <TableCell align="right">C1</TableCell>
-              <TableCell align="right">C2</TableCell>
-              <TableCell align="right">C3</TableCell>
-              <TableCell align="right">C4</TableCell>
-              <TableCell align="right">C5</TableCell>
-              <TableCell align="right">Total</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {historicalData.map((row) => (
-              <TableRow key={row.month}>
-                <TableCell>{formatMonthDisplay(row.month)}</TableCell>
-                <TableCell align="right">{row.C1.toLocaleString()}</TableCell>
-                <TableCell align="right">{row.C2.toLocaleString()}</TableCell>
-                <TableCell align="right">{row.C3.toLocaleString()}</TableCell>
-                <TableCell align="right">{row.C4.toLocaleString()}</TableCell>
-                <TableCell align="right">{row.C5.toLocaleString()}</TableCell>
-                <TableCell align="right">{row.total.toLocaleString()}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    );
+  const getData = () => {
+    if (!site) return [];
+    return selectedTab === 'unit' ? site?.unitMatrixData : site?.chargesMatrixData;
   };
 
-  const handleEdit = (data) => {
-    setSelectedData(data);
-    setOpenForm(true);
+  const getRandomColor = (index) => {
+    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#ff0000', '#0088FE', '#00C49F', '#FFBB28'];
+    return colors[index];
   };
 
-  const handleSubmit = (formData) => {
+  const handleOpenDialog = () => {
+    setNewData({
+      month: '',
+      c1: '',
+      c2: '',
+      c3: '',
+      c4: '',
+      c5: '',
+      c001: '',
+      c002: '',
+      c003: '',
+      c004: '',
+      c005: '',
+      c006: '',
+      c007: '',
+      c008: ''
+    });
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
+  const handleInputChange = (field) => (event) => {
+    setNewData({
+      ...newData,
+      [field]: event.target.value
+    });
+  };
+
+  const handleSubmit = () => {
     const newEntry = {
-      month: formData.month,
-      C1: Math.round(parseFloat(formData.C1)),
-      C2: Math.round(parseFloat(formData.C2)),
-      C3: Math.round(parseFloat(formData.C3)),
-      C4: Math.round(parseFloat(formData.C4)),
-      C5: Math.round(parseFloat(formData.C5)),
-      total: Math.round(parseFloat(formData.total))
+      month: newData.month,
+      ...(selectedTab === 'unit' 
+        ? {
+            c1: Number(newData.c1) || 0,
+            c2: Number(newData.c2) || 0,
+            c3: Number(newData.c3) || 0,
+            c4: Number(newData.c4) || 0,
+            c5: Number(newData.c5) || 0
+          }
+        : {
+            c001: Number(newData.c001) || 0,
+            c002: Number(newData.c002) || 0,
+            c003: Number(newData.c003) || 0,
+            c004: Number(newData.c004) || 0,
+            c005: Number(newData.c005) || 0,
+            c006: Number(newData.c006) || 0,
+            c007: Number(newData.c007) || 0,
+            c008: Number(newData.c008) || 0
+          }
+      )
     };
 
-    // Update mock data
-    const updatedMockData = [...mockHistoricalData[id]];
-    const index = updatedMockData.findIndex(
-      item => item.month === formData.month
-    );
-
-    if (index !== -1) {
-      updatedMockData[index] = {
-        ...updatedMockData[index],
-        C1: newEntry.C1,
-        C2: newEntry.C2,
-        C3: newEntry.C3,
-        C4: newEntry.C4,
-        C5: newEntry.C5,
-        total: newEntry.total
-      };
+    if (selectedTab === 'unit') {
+      setSite({
+        ...site,
+        unitMatrixData: [...site.unitMatrixData, newEntry]
+      });
     } else {
-      updatedMockData.push({
-        month: formData.month,
-        C1: newEntry.C1,
-        C2: newEntry.C2,
-        C3: newEntry.C3,
-        C4: newEntry.C4,
-        C5: newEntry.C5,
-        total: newEntry.total
+      setSite({
+        ...site,
+        chargesMatrixData: [...site.chargesMatrixData, newEntry]
       });
     }
 
-    // Update state
-    setHistoricalData(updatedMockData);
-
-    setSelectedData(null);
-    setOpenForm(false);
+    handleCloseDialog();
   };
 
-  const handleDelete = (month) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      // Remove from mock data
-      const updatedMockData = mockHistoricalData[id].filter(
-        item => item.month !== month
-      );
+  const handleEditClick = (data) => {
+    setSelectedData(data);
+    setEditDialogOpen(true);
+  };
 
-      // Update state
-      setHistoricalData(updatedMockData);
+  const handleEditClose = () => {
+    setSelectedData(null);
+    setEditDialogOpen(false);
+  };
+
+  const handleEditSave = async (editedData) => {
+    try {
+      const updatedCData = site.cData.map(row => 
+        row.id === selectedData.id ? {
+          ...row,
+          ...editedData,
+          c1: parseInt(editedData.c1) || 0,
+          c2: parseInt(editedData.c2) || 0,
+          c3: parseInt(editedData.c3) || 0,
+          c4: parseInt(editedData.c4) || 0,
+          c5: parseInt(editedData.c5) || 0
+        } : row
+      );
+      
+      setSite({
+        ...site,
+        cData: updatedCData
+      });
+      
+      handleEditClose();
+    } catch (error) {
+      console.error('Error updating C values:', error);
     }
   };
 
+  const handleDeleteClick = (data) => {
+    setSelectedData(data);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteClose = () => {
+    setSelectedData(null);
+    setDeleteConfirmOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const updatedCData = site.cData.filter(row => row.id !== selectedData.id);
+      setSite({
+        ...site,
+        cData: updatedCData
+      });
+      
+      handleDeleteClose();
+    } catch (error) {
+      console.error('Error deleting C values:', error);
+    }
+  };
+
+  if (!site) {
+    return <CircularProgress />;
+  }
+
   return (
-    <Container maxWidth="xl">
-      {/* Back Button */}
-      <Box sx={{ mb: 3, mt: 2 }}>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Grid item xs={12}>
         <Button
-          variant="text"
-          color="primary"
+          startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/production')}
-          startIcon={<ArrowBack />}
-          sx={{ 
-            color: '#1a237e',
-            '&:hover': {
-              backgroundColor: 'rgba(26, 35, 126, 0.04)'
-            }
-          }}
+          sx={{ mb: 2 }}
         >
-          BACK TO PRODUCTION SITES
+          Back to Production Sites
         </Button>
-      </Box>
+        <Typography variant="h5" sx={{ mb: 2 }}>
+          {'Pudukottai Solar Park'}
+        </Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          {site.id === 'ps1' ? 'Pudukottai, Tamil Nadu' : site.id === 'tw1' ? 'Tirunelveli, Tamil Nadu' : site.location}
+        </Typography>
+      </Grid>
 
-      {/* Site Name Header */}
-      <Typography 
-        variant="h5" 
-        component="h1" 
-        sx={{ 
-          mb: 3,
-          fontWeight: 500,
-          color: '#1a237e'
-        }}
-      >
-        {siteData[id].name}
-      </Typography>
-
-      <Grid container spacing={3}>
-        {/* Left Column - Site Information */}
+      <Grid container item xs={12} spacing={4}>
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, height: '100%' }}>
-            <Typography 
-              variant="h6" 
-              component="h2" 
-              sx={{ 
-                mb: 3,
-                color: '#1a237e',
-                fontWeight: 500
-              }}
-            >
+          <Paper sx={{ p: 3, bgcolor: '#f5f5f5' }}>
+            <Typography variant="h6" gutterBottom>
               Site Information
             </Typography>
-
             <List>
-              {/* Location */}
               <ListItem>
                 <ListItemIcon>
-                  <LocationOn color="primary" sx={{ mt: 0.5 }} />
-                </ListItemIcon>
-                <ListItemText primary={siteData[id].location} secondary={siteData[id].coordinates} />
-              </ListItem>
-
-              {/* Grid & Connection */}
-              <ListItem>
-                <ListItemIcon>
-                  <Power color="primary" sx={{ mt: 0.5 }} />
+                  <BusinessIcon sx={{ color: '#1976d2' }} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="Grid & Connection" 
-                  secondary={
-                    <Box>
-                      <Typography variant="body2">Grid: {siteData[id].grid}</Typography>
-                      <Typography variant="body2">Connection Type: {siteData[id].connectionType}</Typography>
-                    </Box>
-                  } 
+                  primary="Name"
+                  secondary={site.id === 'ps1' ? 'Pudukottai Solar Park' : site.id === 'tw1' ? 'Tirunelveli Wind Farm' : site.name}
                 />
               </ListItem>
 
-              {/* Status & Type */}
               <ListItem>
                 <ListItemIcon>
-                  <CheckCircle color="primary" sx={{ mt: 0.5 }} />
+                  <LocationIcon sx={{ color: '#2e7d32' }} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="Status & Type" 
-                  secondary={
-                    <Box>
-                      <Typography variant="body2">Status: {siteData[id].status}</Typography>
-                      <Typography variant="body2">Type: {siteData[id].type}</Typography>
-                      <Typography variant="body2">Company Type: {siteData[id].companyType}</Typography>
-                    </Box>
-                  } 
+                  primary="Location"
+                  secondary={site.id === 'ps1' ? 'Pudukottai, Tamil Nadu' : site.id === 'tw1' ? 'Tirunelveli, Tamil Nadu' : site.location}
                 />
               </ListItem>
 
-              {/* Capacity & Area */}
               <ListItem>
                 <ListItemIcon>
-                  <Speed color="primary" sx={{ mt: 0.5 }} />
+                  <BusinessIcon sx={{ color: '#ed6c02' }} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="Capacity & Area" 
-                  secondary={
-                    <Box>
-                      <Typography variant="body2">Capacity: {siteData[id].capacity}</Typography>
-                      <Typography variant="body2">Total Area: {siteData[id].totalArea}</Typography>
-                      {siteData[id].type === 'SOLAR' ? (
-                        <Typography variant="body2">Panel Type: {siteData[id].panelType}</Typography>
-                      ) : siteData[id].type === 'WIND' ? (
-                        <Typography variant="body2">Turbine Type: {siteData[id].turbineType}</Typography>
-                      ) : (
-                        <></>
-                      )}
-                    </Box>
-                  } 
+                  primary="Type"
+                  secondary={site.id === 'ps1' ? 'SOLAR' : site.id === 'tw1' ? 'WIND' : site.type}
                 />
               </ListItem>
 
-              {/* Service Information */}
               <ListItem>
                 <ListItemIcon>
-                  <Assignment color="primary" sx={{ mt: 0.5 }} />
+                  <GridIcon sx={{ color: '#d32f2f' }} />
                 </ListItemIcon>
                 <ListItemText 
-                  primary="Service Information" 
-                  secondary={
-                    <Box>
-                      <Typography variant="body2">Service Number: {siteData[id].serviceNumber}</Typography>
-                      <Typography variant="body2">Commission Date: {siteData[id].commissionDate || '-'}</Typography>
-                      <Typography variant="body2">Last Inspection: {siteData[id].lastInspection || '-'}</Typography>
-                      <Typography variant="body2">Maintenance: {siteData[id].maintenance || '-'}</Typography>
-                    </Box>
-                  } 
+                  primary="Grid"
+                  secondary="TANGEDCO"
+                />
+              </ListItem>
+
+              <ListItem>
+                <ListItemIcon>
+                  <StatusIcon sx={{ color: '#4caf50' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Status"
+                  secondary="Active"
+                />
+              </ListItem>
+
+              <ListItem>
+                <ListItemIcon>
+                  <CapacityIcon sx={{ color: '#0288d1' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Capacity"
+                  secondary={site.id === 'ps1' ? '600 MW' : site.id === 'tw1' ? '1000 MW' : site.capacity}
+                />
+              </ListItem>
+
+              <ListItem>
+                <ListItemIcon>
+                  <ServiceNumberIcon sx={{ color: '#9c27b0' }} />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Service Number"
+                  secondary={site.id === 'ps1' ? 'TNL-001' : site.id === 'tw1' ? '069534460069' : site.serviceNumber}
                 />
               </ListItem>
             </List>
           </Paper>
         </Grid>
 
-        {/* Right Column - Chart and Data */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3 }}>
-            {renderChart()}
-            {renderHistoricalTable()}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Historical Production Graph</Typography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenDialog}
+                sx={{ marginRight: 0 }}
+              >
+                Enter New Data
+              </Button>
+            </Box>
+
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+              <Tabs 
+                value={selectedTab} 
+                onChange={handleTabChange}
+                textColor="primary"
+                indicatorColor="primary"
+              >
+                <Tab value="unit" label="UNIT MATRIX" />
+                <Tab value="charges" label="CHARGES MATRIX" />
+              </Tabs>
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+              <ToggleButtonGroup
+                value={chartType}
+                exclusive
+                onChange={(e, value) => value && setChartType(value)}
+                size="small"
+              >
+                <ToggleButton value="line">LINE</ToggleButton>
+                <ToggleButton value="bar">BAR</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+
+            <Box sx={{ height: 400, width: '100%' }}>
+              <ResponsiveContainer>
+                {chartType === 'line' ? (
+                  <LineChart data={getData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    {getDataKeys().map((key, index) => (
+                      <Line
+                        key={key}
+                        type="monotone"
+                        dataKey={key}
+                        name={key.toUpperCase()}
+                        stroke={getRandomColor(index)}
+                        activeDot={{ r: 8 }}
+                      />
+                    ))}
+                  </LineChart>
+                ) : (
+                  <BarChart data={getData()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    {getDataKeys().map((key, index) => (
+                      <Bar
+                        key={key}
+                        dataKey={key}
+                        name={key.toUpperCase()}
+                        fill={getRandomColor(index)}
+                      />
+                    ))}
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
 
-      <ProductionDataForm
-        open={openForm}
-        onClose={() => {
-          setOpenForm(false);
-          setSelectedData(null);
-        }}
-        onSubmit={handleSubmit}
-        initialData={selectedData}
-      />
+      <Grid container item xs={12} spacing={4} sx={{ mt: 4 }}>
+        <Grid item xs={12} md={12}>
+          <div>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6">Historical Production Data</Typography>
+            </Box>
+            <TableContainer component={Paper} sx={{ mt: 3 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Month</TableCell>
+                    <TableCell>C1</TableCell>
+                    <TableCell>C2</TableCell>
+                    <TableCell>C3</TableCell>
+                    <TableCell>C4</TableCell>
+                    <TableCell>C5</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {site.cData.map((data) => {
+                    const totalC = data.c1 + data.c2 + data.c3 + data.c4 + data.c5;
+                    return (
+                      <TableRow key={data.id}>
+                        <TableCell>{data.month}</TableCell>
+                        <TableCell>{data.c1}</TableCell>
+                        <TableCell>{data.c2}</TableCell>
+                        <TableCell>{data.c3}</TableCell>
+                        <TableCell>{data.c4}</TableCell>
+                        <TableCell>{data.c5}</TableCell>
+                        <TableCell>{totalC}</TableCell>
+                        <TableCell>
+                          <IconButton onClick={() => handleEditClick(data)}>
+                            <EditIcon sx={{ color: 'primary.main' }} />
+                          </IconButton>
+                          <IconButton onClick={() => handleDeleteClick(data)}>
+                            <DeleteIcon sx={{ color: 'error.main' }} />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Dialog open={editDialogOpen} onClose={handleEditClose} maxWidth="sm" fullWidth>
+              <DialogTitle>Edit C Values</DialogTitle>
+              <DialogContent>
+                <Box component="form" sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', mt: 2 }}>
+                  <TextField
+                    label="Month"
+                    fullWidth
+                    value={selectedData?.month || ''}
+                    margin="normal"
+                    name="month"
+                    onChange={(e) => {
+                      setSelectedData({
+                        ...selectedData,
+                        month: e.target.value
+                      });
+                    }}
+                  />
+                  {['c1', 'c2', 'c3', 'c4', 'c5'].map((field) => (
+                    <TextField
+                      key={field}
+                      label={field.toUpperCase()}
+                      fullWidth
+                      type="number"
+                      value={selectedData?.[field] || ''}
+                      margin="normal"
+                      name={field}
+                      onChange={(e) => {
+                        setSelectedData({
+                          ...selectedData,
+                          [field]: e.target.value
+                        });
+                      }}
+                    />
+                  ))}
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleEditClose}>Cancel</Button>
+                <Button 
+                  onClick={() => handleEditSave(selectedData)} 
+                  variant="contained"
+                  color="primary"
+                >
+                  Save Changes
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </div>
+        </Grid>
+      </Grid>
+
+      <Grid container item xs={12} spacing={4} sx={{ mt: 4 }}>
+        <Grid item xs={12} md={12}>
+          <Paper sx={{ p: 3 }}>
+            <Dialog open={deleteConfirmOpen} onClose={handleDeleteClose}>
+              <DialogTitle>Confirm Delete C Values Entry</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  Are you sure you want to delete the C values entry for {selectedData?.month}? This action cannot be undone.
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleDeleteClose}>Cancel</Button>
+                <Button 
+                  onClick={handleDeleteConfirm} 
+                  color="error" 
+                  variant="contained"
+                >
+                  Delete
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Enter New {selectedTab === 'unit' ? 'Unit Matrix' : 'Charges Matrix'} Data
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'grid', gap: 2, pt: 2 }}>
+            <TextField
+              select
+              label="Month"
+              value={newData.month}
+              onChange={handleInputChange('month')}
+              fullWidth
+            >
+              {months.map((month) => (
+                <MenuItem key={month} value={month}>
+                  {month}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+              gap: 2 
+            }}>
+              {selectedTab === 'unit' ? (
+                // Unit Matrix Fields (C1-C5)
+                ['c1', 'c2', 'c3', 'c4', 'c5'].map((field) => (
+                  <TextField
+                    key={field}
+                    label={field.toUpperCase()}
+                    type="number"
+                    value={newData[field]}
+                    onChange={handleInputChange(field)}
+                    fullWidth
+                  />
+                ))
+              ) : (
+                // Charges Matrix Fields (C001-C008)
+                ['c001', 'c002', 'c003', 'c004', 'c005', 'c006', 'c007', 'c008'].map((field) => (
+                  <TextField
+                    key={field}
+                    label={field.toUpperCase()}
+                    type="number"
+                    value={newData[field]}
+                    onChange={handleInputChange(field)}
+                    fullWidth
+                  />
+                ))
+              )}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit} 
+            variant="contained"
+            disabled={!newData.month}
+          >
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
-};
+}
 
 export default ProductionSiteDetails;

@@ -5,13 +5,7 @@ export const PRODUCTION_SITES = [
     fullName: 'M/S STRIO KAIZEN HITECH RESEARCH LABS PVT.LTD.',
     location: 'Tirunelveli',
     type: 'IS-CAPTIVE',
-    serviceNumber: '079204721131',
-    isRec: 'Non-Rec',
-    machineCapacity: 600,
-    netGeneration: 101732,
     category: 'IS-CAPTIVE',
-    typeOfSS: 'TANGEDCO OWN SS',
-    injectingVoltage: '33KV',
     historicalData: {
       '2025-01': {
         fromPowerplant: {
@@ -93,15 +87,7 @@ export const PRODUCTION_SITES = [
     fullName: 'M/s.STRIO KAIZEN HITECH RESEARCH LABS (P) LTD',
     location: 'Pudukottai',
     type: 'IS-CAPTIVE',
-    serviceNumber: '069534460069',
-    isRec: 'Non-Rec',
-    machineCapacity: 1000,
-    multiplicationFactor: 1200,
-    netGeneration: 166075,
     category: 'IS-CAPTIVE',
-    typeOfSS: 'SECTION 10(1)SS',
-    injectingVoltage: '22KV',
-    lossPercent: 2.64,
     historicalData: {
       '2025-01': {
         fromPowerplant: {
@@ -181,12 +167,11 @@ export const PRODUCTION_SITES = [
 
 export const CONSUMPTION_SITES = [
   {
-    id: 'CS1',
-    name: 'POLYSPIN EXPORTS LTD.,EXPANSION UNIT.',
+    id: 'ramar-2',
+    name: 'Ramar 2',
     location: 'VIRUDUNAGAR',
     type: 'Consumer',
-    serviceNumber: '079094620335',
-    allocated: 35820,
+    consumption_ratio: 0.35,
     historicalData: {
       '2024-12': {
         C1: 5000,
@@ -204,82 +189,56 @@ export const CONSUMPTION_SITES = [
         C5: 0,
         total: 32800
       }
-    },
-    unitValues: {
-      C1: 5254,
-      C2: 0,
-      C3: 0,
-      C4: 30566,
-      C5: 0,
-      total: 35820
     }
   },
   {
-    id: 'CS2',
-    name: 'PEL TEXTILES',
+    id: 'pel-1',
+    name: 'PEL 1',
     location: 'VIRUDUNAGAR',
     type: 'Consumer',
-    serviceNumber: '079094620348',
-    allocated: 8039,
+    consumption_ratio: 0.30,
     historicalData: {
       '2024-12': {
-        C1: 0,
+        C1: 4500,
         C2: 0,
         C3: 0,
-        C4: 7500,
+        C4: 25000,
         C5: 0,
-        total: 7500
+        total: 29500
       },
       '2024-11': {
-        C1: 0,
+        C1: 4300,
         C2: 0,
         C3: 0,
-        C4: 7200,
+        C4: 24000,
         C5: 0,
-        total: 7200
+        total: 28300
       }
-    },
-    unitValues: {
-      C1: 0,
-      C2: 0,
-      C3: 0,
-      C4: 8039,
-      C5: 0,
-      total: 8039
     }
   },
   {
-    id: 'CS3',
-    name: 'M/S. A RAMAR AND SONS',
-    location: 'MADURAI METRO',
+    id: 'polyspin-1',
+    name: 'Polyspin 1',
+    location: 'VIRUDUNAGAR',
     type: 'Consumer',
-    serviceNumber: '059094630184',
-    allocated: 122216,
+    consumption_ratio: 0.35,
     historicalData: {
       '2024-12': {
-        C1: 38000,
+        C1: 5500,
         C2: 0,
         C3: 0,
-        C4: 80000,
+        C4: 31000,
         C5: 0,
-        total: 118000
+        total: 36500
       },
       '2024-11': {
-        C1: 37000,
+        C1: 5200,
         C2: 0,
         C3: 0,
-        C4: 78000,
+        C4: 30000,
         C5: 0,
-        total: 115000
+        total: 35200
       }
-    },
-    unitValues: {
-      C1: 39119,
-      C2: 0,
-      C3: 0,
-      C4: 83097,
-      C5: 0,
-      total: 122216
     }
   }
 ];

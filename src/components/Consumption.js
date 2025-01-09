@@ -1,108 +1,110 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
+  Container,
   Typography,
   Paper,
+  Box,
   Grid,
-  Button,
-  IconButton,
+  Chip,
+  IconButton
 } from '@mui/material';
 import {
-  LocationOn as LocationIcon,
-  Business as BusinessIcon,
-  Speed as ConsumptionIcon,
-  PowerOutlined as PowerIcon,
-  ArrowForward as ArrowForwardIcon
+  Speed as SpeedIcon,
+  Numbers as ServiceNumberIcon,
+  AccountBalance as BankIcon
 } from '@mui/icons-material';
-import { CONSUMPTION_SITES } from '../data/sites';
+import { getConsumptionSites } from '../utils/consumptionStorage';
 
 function Consumption() {
   const navigate = useNavigate();
+  const [sites, setSites] = useState([]);
+
+  useEffect(() => {
+    const loadSites = async () => {
+      try {
+        const sitesData = await getConsumptionSites();
+        setSites(sitesData);
+      } catch (error) {
+        console.error('Error loading consumption sites:', error);
+      }
+    };
+    loadSites();
+  }, []);
 
   const handleSiteClick = (siteId) => {
-    navigate(`/consumption/view/${siteId}`);
+    navigate(`/consumption/${siteId}`);
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 3, color: '#1a237e', fontWeight: 500 }}>
-        Consumption Sites
-      </Typography>
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <IconButton 
+          sx={{ 
+            mr: 2, 
+            bgcolor: 'primary.main',
+            color: 'white',
+            '&:hover': {
+              bgcolor: 'primary.dark'
+            }
+          }}
+        >
+          <SpeedIcon />
+        </IconButton>
+        <Typography variant="h4" component="h1">
+          Consumption Sites
+        </Typography>
+      </Box>
 
       <Grid container spacing={3}>
-        {CONSUMPTION_SITES.map((site) => (
-          <Grid item xs={12} sm={6} md={4} key={site.id}>
-            <Paper 
-              sx={{ 
-                p: 3, 
+        {sites.map((site) => (
+          <Grid item xs={12} sm={6} key={site.id}>
+            <Paper
+              sx={{
+                p: 3,
                 cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                  boxShadow: 3
                 }
               }}
               onClick={() => handleSiteClick(site.id)}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                <Typography variant="h6" sx={{ color: '#1a237e', fontWeight: 500 }}>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="h6" gutterBottom>
                   {site.name}
                 </Typography>
-                <IconButton 
-                  size="small" 
-                  sx={{ color: '#1a237e' }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSiteClick(site.id);
-                  }}
-                >
-                  <ArrowForwardIcon />
-                </IconButton>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {site.location}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Service Number: {site.serviceNumber}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Consumer Type: {site.consumerType}
+                </Typography>
               </Box>
 
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <LocationIcon sx={{ mr: 1, color: '#666' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {site.location}
-                    </Typography>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <BusinessIcon sx={{ mr: 1, color: '#666' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {site.type}
-                    </Typography>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <ConsumptionIcon sx={{ mr: 1, color: '#666' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {site.capacity}
-                    </Typography>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <PowerIcon sx={{ mr: 1, color: '#666' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {site.serviceNumber}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Chip
+                  label={site.type}
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                />
+                <Chip
+                  label={site.id}
+                  size="small"
+                  color="secondary"
+                  variant="outlined"
+                />
+              </Box>
             </Paper>
           </Grid>
         ))}
       </Grid>
-    </Box>
+    </Container>
   );
 }
 

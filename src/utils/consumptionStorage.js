@@ -67,8 +67,30 @@ let CONSUMPTION_SITES = [
 ];
 
 // Get all consumption sites
-export const getConsumptionSites = () => {
-  return Promise.resolve(CONSUMPTION_SITES);
+export const getConsumptionSites = async () => {
+  try {
+    // First try to fetch from API
+    const response = await fetch('/api/consumption-sites');
+    if (response.ok) {
+      const data = await response.json();
+      // Cache the data in localStorage
+      localStorage.setItem(CONSUMPTION_SITES_KEY, JSON.stringify(data));
+      return data;
+    }
+    
+    // If API fails, try to get from localStorage
+    const cachedData = localStorage.getItem(CONSUMPTION_SITES_KEY);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+    
+    // If no cached data, return default CONSUMPTION_SITES
+    return CONSUMPTION_SITES;
+  } catch (error) {
+    console.error('Error fetching consumption sites:', error);
+    // Fallback to default data if everything fails
+    return CONSUMPTION_SITES;
+  }
 };
 
 // Get consumption site by id

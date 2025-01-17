@@ -360,8 +360,8 @@ function ProductionSiteDetails() {
         >
           Back to Production Sites
         </Button>
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          {'Pudukottai Solar Park'}
+        <Typography variant="h5" sx={{ mb: 2, color: '#1a237e', fontWeight: 'bold' }}>
+          {site?.location?.toLowerCase().includes('tirunelveli') ? 'Tirunelveli Wind Farm' : 'Pudukottai Solar Park'}
         </Typography>
         <Typography variant="h6" sx={{ mb: 2 }}>
           {site.id === 'ps1' ? 'Pudukottai, Tamil Nadu' : site.id === 'tw1' ? 'Tirunelveli, Tamil Nadu' : site.location}

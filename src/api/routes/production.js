@@ -1,5 +1,5 @@
-import express from 'express';
-import multer from 'multer';
+const express = require('express');
+const multer = require('multer');
 
 const router = express.Router();
 const upload = multer();
@@ -268,4 +268,4 @@ router.delete('/:siteId/history/:id', (req, res) => {
   res.status(200).json({ message: 'Production data deleted successfully' });
 });
 
-export default router;
+module.exports = router;

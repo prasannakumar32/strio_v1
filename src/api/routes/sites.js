@@ -57,4 +57,9 @@ router.get('/consumption', (req, res) => {
   res.json(consumptionSites);
 });
 
+// Routes for sites data
+router.get('/', (req, res) => {
+  res.json({ message: 'Sites routes working' });
+});
+
 module.exports = router;

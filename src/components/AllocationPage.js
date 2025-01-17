@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -31,6 +31,17 @@ const AllocationPage = () => {
   };
 
   const tableHeaders = ['Month', 'Site', 'Quantity', 'Category', 'Status', 'Actions'];
+
+  useEffect(() => {
+    // Logic to fetch data from the consumption site data in local storage
+    const storedConsumptionData = localStorage.getItem('consumptionSiteData');
+    console.log('Stored Consumption Data:', storedConsumptionData); // Log the stored data
+    if (storedConsumptionData) {
+      const parsedData = JSON.parse(storedConsumptionData);
+      console.log('Parsed Consumption Data:', parsedData); // Log the parsed data
+      setConsumptionData(parsedData);
+    }
+  }, []);
 
   return (
     <Box sx={{ p: 3 }}>
